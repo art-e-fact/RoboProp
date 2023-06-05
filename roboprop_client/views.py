@@ -8,10 +8,14 @@ headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
 fileserver_url = os.getenv("FILESERVER_URL")
 
 
+def _make_get_request(url):
+    return requests.get(url, headers=headers)
+
+
 def _get_assets(asset_library):
     if asset_library == "roboprop":
         url = fileserver_url + "?full_tree=true&as_list=true"
-        response = requests.get(url, headers=headers)
+        response = _make_get_request(url)
         data = response.json()["resource"]
     return data
 
@@ -22,7 +26,7 @@ def _get_roboprop_asset_thumbnails(assets):
         if "thumbnails" in asset and not asset.endswith("/"):
             name = asset.split("/")[0]
             url = fileserver_url + asset + "?is_base64=true"
-            response = requests.get(url, headers=headers)
+            response = _make_get_request(url)
             thumbnail_base64 = base64.b64encode(response.content).decode("utf-8")
             # Ensure only one thumbnail per asset
             if name not in thumbnails:

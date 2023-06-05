@@ -5,4 +5,15 @@
 {% block content %}
     <h1>RoboProp</h1>
     <p>Hello World</p>
+
+    <h3>File Server Data</h3>
+    <h1>Thumbnails</h1>
+    {% for folder in thumbnails %}
+        <h2>{{ folder.folder_name }}</h2>
+        <ul>
+            {% for thumbnail_url in folder.thumbnails %}
+                <li><img src="data:image/png;base64,{{ thumbnail_url }}" alt="Thumbnail"></li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
 {% endblock %}

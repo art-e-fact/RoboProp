@@ -3,10 +3,20 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h1>RoboProp</h1>
-    <h2>My Assets</h2>
-    {% for asset in thumbnails %}
-        <h4>{{ asset.name }}</h4>
-        <img src="data:image/png;base64,{{ asset.thumbnail }}" alt="Thumbnail">
-    {% endfor %}
+    <div class="container">
+        <h1 class="mt-5">RoboProp</h1>
+        <h2 class="mt-4">My Assets</h2>
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-4">
+            {% for asset in thumbnails %}
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="data:image/png;base64,{{ asset.thumbnail }}" class="card-img-top" alt="Thumbnail" style="object-fit: cover; height: 280px;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ asset.name }}</h5>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 {% endblock %}

@@ -4,28 +4,39 @@ import base64
 from django.shortcuts import render
 from django.http import HttpResponse
 
+headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
+fileserver_url = os.getenv("FILESERVER_URL")
+
+
+def _get_assets(asset_library):
+    if asset_library == "roboprop":
+        url = fileserver_url + "?full_tree=true&as_list=true"
+        response = requests.get(url, headers=headers)
+        data = response.json()["resource"]
+    return data
+
+
+def _get_roboprop_asset_thumbnails(assets):
+    thumbnails = {}
+    for asset in assets:
+        if "thumbnails" in asset and not asset.endswith("/"):
+            name = asset.split("/")[0]
+            url = fileserver_url + asset + "?is_base64=true"
+            response = requests.get(url, headers=headers)
+            thumbnail_base64 = base64.b64encode(response.content).decode("utf-8")
+            # Ensure only one thumbnail per asset
+            if name not in thumbnails:
+                thumbnails[name] = thumbnail_base64
+    return [
+        {"name": name, "thumbnail": thumbnail_base64}
+        for name, thumbnail_base64 in thumbnails.items()
+    ]
+
 
 def home(request):
-    api_key = os.getenv("FILESERVER_API_KEY")
-    url = os.getenv("FILESERVER_URL") + "?full_tree=true&as_list=true"
-    headers = {"X-DreamFactory-API-Key": api_key}
-    response = requests.get(url, headers=headers)
-    data = response.json()["resource"]
-    thumbnails = []
-    for item in data:
-        if "thumbnails" in item and not item.endswith("/"):
-            folder_name = item.split("/")[0]
-            thumbnail_url = os.getenv("FILESERVER_URL") + item + "?is_base64=true"
-            thumbnail_response = requests.get(thumbnail_url, headers=headers)
-            thumbnail_data = thumbnail_response.content
-            thumbnail_base64 = base64.b64encode(thumbnail_data).decode("utf-8")
-            for folder in thumbnails:
-                if folder_name == folder["folder_name"]:
-                    folder["thumbnails"].append(thumbnail_base64)
-                    break
-            else:
-                thumbnails.append(
-                    {"folder_name": folder_name, "thumbnails": [thumbnail_base64]}
-                )
-    print(thumbnails)
+    roboprop_assets = _get_assets("roboprop")
+    roboprop_asset_thumbnails = _get_roboprop_asset_thumbnails(roboprop_assets)
+    fuel_thumbnails = []  # TODO:
+    thumbnails = roboprop_asset_thumbnails + fuel_thumbnails
+
     return render(request, "home.html", {"thumbnails": thumbnails})

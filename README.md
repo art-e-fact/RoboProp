@@ -6,4 +6,4 @@
 
 ### Development
 
-* Styling: Bootstrap 5
+* Styling: Tailwind and Flowbite

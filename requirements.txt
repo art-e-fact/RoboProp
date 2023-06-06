@@ -1,4 +1,4 @@
 django
-django-bootstrap-v5
+django-compressor
 python-dotenv
 requests

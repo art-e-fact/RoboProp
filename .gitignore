@@ -88,3 +88,5 @@ sftp-config.json
 .history
 
 node_modules/
+static/CACHE/
+static/src/output.css

@@ -64,6 +64,6 @@ class TestGetRobopropAssetThumbnails(unittest.TestCase):
         result = _get_roboprop_asset_thumbnails(assets)
 
         self.assertEqual(result[0]["name"], "model1")
-        self.assertEqual(result[0]["thumbnail"], "dGh1bWJuYWls")
+        self.assertEqual(result[0]["image"], "dGh1bWJuYWls")
         self.assertEqual(result[1]["name"], "model2")
-        self.assertEqual(result[1]["thumbnail"], "dGh1bWJuYWls")
+        self.assertEqual(result[1]["image"], "dGh1bWJuYWls")

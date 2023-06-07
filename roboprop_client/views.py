@@ -32,15 +32,19 @@ def _get_roboprop_asset_thumbnails(assets):
             if name not in thumbnails:
                 thumbnails[name] = thumbnail_base64
     return [
-        {"name": name, "thumbnail": thumbnail_base64}
+        {"name": name, "image": thumbnail_base64}
         for name, thumbnail_base64 in thumbnails.items()
     ]
 
 
 def home(request):
+    return render(request, "home.html")
+
+
+def mymodels(request):
     roboprop_assets = _get_assets("roboprop")
     roboprop_asset_thumbnails = _get_roboprop_asset_thumbnails(roboprop_assets)
     fuel_thumbnails = []  # TODO:
     thumbnails = roboprop_asset_thumbnails + fuel_thumbnails
 
-    return render(request, "home.html", {"thumbnails": thumbnails})
+    return render(request, "mymodels.html", {"thumbnails": thumbnails})

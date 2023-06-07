@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}My Models{% endblock %}
+
+{% block content %}
+    <h2 class="text-2xl text-center">My Models</h2>
+    <div class="flex items-center justify-center py-4 md:py-8 flex-wrap">
+        <button type="button" class="text-action hover:text-white border border-action bg-white hover:bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-full text-base font-medium px-5 py-2.5 text-center mr-3 mb-3 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:bg-gray-900 dark:focus:ring-blue-800">All categories</button>
+        <button type="button" class="text-gray-900 border border-white hover:border-gray-200 dark:border-gray-900 dark:bg-gray-900 dark:hover:border-gray-700 bg-white focus:ring-4 focus:outline-none focus:ring-gray-300 rounded-full text-base font-medium px-5 py-2.5 text-center mr-3 mb-3 dark:text-white dark:focus:ring-gray-800">Kitchen</button>
+        <button type="button" class="text-gray-900 border border-white hover:border-gray-200 dark:border-gray-900 dark:bg-gray-900 dark:hover:border-gray-700 bg-white focus:ring-4 focus:outline-none focus:ring-gray-300 rounded-full text-base font-medium px-5 py-2.5 text-center mr-3 mb-3 dark:text-white dark:focus:ring-gray-800">Aerospace</button>
+        <button type="button" class="text-gray-900 border border-white hover:border-gray-200 dark:border-gray-900 dark:bg-gray-900 dark:hover:border-gray-700 bg-white focus:ring-4 focus:outline-none focus:ring-gray-300 rounded-full text-base font-medium px-5 py-2.5 text-center mr-3 mb-3 dark:text-white dark:focus:ring-gray-800">Warehouse</button>
+        <button type="button" class="text-gray-900 border border-white hover:border-gray-200 dark:border-gray-900 dark:bg-gray-900 dark:hover:border-gray-700 bg-white focus:ring-4 focus:outline-none focus:ring-gray-300 rounded-full text-base font-medium px-5 py-2.5 text-center mr-3 mb-3 dark:text-white dark:focus:ring-gray-800">Nautical</button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {% for thumbnail in thumbnails %}
+        <div class="flex flex-col items-center shadow shadow-action/50">
+            <div class="mb-2">
+                <img class="h-44 w-auto max-w-full rounded-lg" src="data:image/png;base64,{{ thumbnail.image }}" alt="{{ thumbnail.name }}">
+            </div>
+            <div class="mb-2">
+                <p>{{ thumbnail.name }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

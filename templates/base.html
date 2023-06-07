@@ -15,8 +15,10 @@
     <body class="bg-slate-50">
         {% include 'partials/navbar.html' %} 
         <div class="p-4 sm:ml-64">
+            <div class="container pt-16">
             {% block content %}
             {% endblock %}
+            </div>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.5/flowbite.min.js"></script>
     </body>

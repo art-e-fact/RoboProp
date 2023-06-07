@@ -1,7 +1,12 @@
 from django.test import TestCase
+from django.urls import reverse
 import unittest
 from unittest.mock import patch, MagicMock
-from roboprop_client.views import _get_assets, _get_roboprop_asset_thumbnails
+from roboprop_client.views import (
+    _get_assets,
+    _get_roboprop_asset_thumbnails,
+    mymodel_detail,
+)
 
 """mocks cheat sheet and the equivalent commands that they mock:
 mock_response == requests.get(url, headers=headers)
@@ -67,3 +72,14 @@ class TestGetRobopropAssetThumbnails(unittest.TestCase):
         self.assertEqual(result[0]["image"], "dGh1bWJuYWls")
         self.assertEqual(result[1]["name"], "model2")
         self.assertEqual(result[1]["image"], "dGh1bWJuYWls")
+
+
+class MyModelDetailTestCase(TestCase):
+    def test_model_name_matches_url(self):
+        model_name = "example_model"
+        url = reverse("mymodel_detail", args=[model_name])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        model = response.context["model"]
+        self.assertEqual(model["name"], model_name)

@@ -12,29 +12,31 @@ def _make_get_request(url):
     return requests.get(url, headers=headers)
 
 
-def _get_models(asset_library):
-    if asset_library == "roboprop":
-        url = fileserver_url + "?full_tree=true&as_list=true"
-        response = _make_get_request(url)
-        data = response.json()["resource"]
-    return data
+def _get_models(url):
+    models = []
+    response = _make_get_request(url)
+    data = response.json()["resource"]
+    for item in data:
+        if item["type"] == "folder":
+            models.append(item["name"])
+    return models
 
 
 def _get_roboprop_model_thumbnails(models):
-    thumbnails = {}
+    thumbnails = []
+    print(models)
     for model in models:
-        if "thumbnails" in model and not model.endswith("/"):
-            name = model.split("/")[0]
-            url = fileserver_url + model + "?is_base64=true"
+        url = fileserver_url + model + "/thumbnails/"
+        response = _make_get_request(url)
+        if response.status_code == 200:
+            thumbnail_data = response.json()["resource"][0]
+            url = fileserver_url + thumbnail_data["path"] + "?is_base64=true"
             response = _make_get_request(url)
-            thumbnail_base64 = base64.b64encode(response.content).decode("utf-8")
-            # Ensure only one thumbnail per model
-            if name not in thumbnails:
-                thumbnails[name] = thumbnail_base64
-    return [
-        {"name": name, "image": thumbnail_base64}
-        for name, thumbnail_base64 in thumbnails.items()
-    ]
+            thumbnail = base64.b64encode(response.content).decode("utf-8")
+        else:
+            thumbnail = None
+        thumbnails.append({"name": model, "image": thumbnail})
+    return thumbnails
 
 
 def home(request):
@@ -42,12 +44,12 @@ def home(request):
 
 
 def mymodels(request):
-    roboprop_models = _get_models("roboprop")
+    roboprop_models = _get_models(fileserver_url)
     roboprop_model_thumbnails = _get_roboprop_model_thumbnails(roboprop_models)
     fuel_thumbnails = []  # TODO:
-    thumbnails = roboprop_model_thumbnails + fuel_thumbnails
+    gallery_thumbnails = roboprop_model_thumbnails + fuel_thumbnails
 
-    return render(request, "mymodels.html", {"thumbnails": thumbnails})
+    return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
 
 def mymodel_detail(request, model):

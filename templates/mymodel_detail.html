@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}My Model{% endblock %}
+
+{% block content %}
+    <h2 class="text-2xl text-center">{{ model.name }}</h2>
+    <div class="grid gap-4">
+        {% if model.thumbnails|first %}
+        <div class="mx-auto">
+                <img class="h-auto max-h-72 max-w-full rounded-lg" src="data:image/png;base64,{{ model.thumbnails|first }}">
+            </div>
+        {% else %}
+            <div class="mx-auto">
+                <img class="h-auto max-h-60 max-w-full rounded-lg" src="/static/images/placeholder.png">
+            </div>
+        {% endif %}
+        <div class="grid grid-cols-4 gap-4">
+            {% for thumbnail in model.thumbnails %}
+                {% if not forloop.first %}
+                    <div class="shadow flex items-center justify-center">
+                        <img class="h-auto max-h-56 max-w-full rounded-lg" src="data:image/png;base64,{{ thumbnail }}">
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="mt-8">
+        <h3 class="text-lg font-medium mb-2">Configuration</h3>
+        <ul class="list-disc list-inside">
+            {% for key, value in model.configuration.items %}
+                <li class="mb-2">
+                    <span class="font-medium">{{ key }}:</span> {{ value }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

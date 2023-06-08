@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}My Model{% endblock %}
+{% load custom_filters %}
+{% block title %}{{ model.name }}{% endblock %}
 
 {% block content %}
     <h2 class="text-2xl text-center">{{ model.name }}</h2>
@@ -23,14 +24,31 @@
             {% endfor %}
         </div>
     </div>
-    <div class="mt-8">
-        <h3 class="text-lg font-medium mb-2">Configuration</h3>
-        <ul class="list-disc list-inside">
+    <form method="put" class="shadow p-2 my-4">
+        {% csrf_token %}
+        <div class="grid gap-2 mb-6 md:grid-cols-2">
             {% for key, value in model.configuration.items %}
-                <li class="mb-2">
-                    <span class="font-medium">{{ key }}:</span> {{ value }}
-                </li>
+                {% if key != 'description' %}
+                    <div class="mt-1">
+                        {% if value|is_dict %}
+                            {% for subkey, subvalue in value.items %}
+                                <label for="{{ key }}_{{ subkey }}" class="block text-sm font-medium text-gray-900">{{ key }} - {{ subkey }}</label>
+                                <input type="text" name="{{ key }}.{{ subkey }}" id="{{ key }}_{{ subkey }}" value="{{ subvalue }}" class="bg-gray-50 mb-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            {% endfor %}
+                        {% else %}
+                            <label for="{{ key }}" class="block text-sm font-medium text-gray-900">{{ key }}</label>
+                            <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endfor %}
-        </ul>
-    </div>
+            {% if model.configuration.description %}
+                <div class="col-span-2">
+                    <label for="description" class="block text-sm font-medium text-gray-900">description</label>
+                    <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
+                </div>
+            {% endif %}
+        </div>
+        <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center mt-2">Save</button>
+    </form>
 {% endblock %}

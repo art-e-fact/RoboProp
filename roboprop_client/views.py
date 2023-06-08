@@ -22,20 +22,23 @@ def _get_models(url):
     return models
 
 
-def _get_roboprop_model_thumbnails(models):
+def _get_roboprop_model_thumbnails(models, gallery=True):
     thumbnails = []
-    print(models)
     for model in models:
         url = fileserver_url + model + "/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
-            thumbnail_data = response.json()["resource"][0]
-            url = fileserver_url + thumbnail_data["path"] + "?is_base64=true"
-            response = _make_get_request(url)
-            thumbnail = base64.b64encode(response.content).decode("utf-8")
+            thumbnail_data = response.json()["resource"]
+            if gallery:
+                # Just one thumbnail for each in mymodels.html
+                thumbnail_data = thumbnail_data[0:1]
+            for data in thumbnail_data:
+                url = fileserver_url + data["path"] + "?is_base64=true"
+                response = _make_get_request(url)
+                thumbnail = base64.b64encode(response.content).decode("utf-8")
+                thumbnails.append({"name": model, "image": thumbnail})
         else:
-            thumbnail = None
-        thumbnails.append({"name": model, "image": thumbnail})
+            thumbnails.append({"name": model, "image": None})
     return thumbnails
 
 

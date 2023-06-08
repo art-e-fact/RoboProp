@@ -36,3 +36,28 @@ class ViewsTestCase(TestCase):
             self.assertEqual(
                 thumbnails, [{"name": "model1", "image": "example base64"}]
             )
+
+    @patch("roboprop_client.views._get_roboprop_model_thumbnails")
+    @patch("roboprop_client.views._get_model_configuration")
+    def test_mymodel_detail(
+        self, mock_get_model_configuration, mock_get_roboprop_model_thumbnails
+    ):
+        # Set up mock data for _get_roboprop_model_thumbnails
+        mock_thumbnail = {"image": "thumbnail.jpg"}
+        mock_get_roboprop_model_thumbnails.return_value = [mock_thumbnail]
+        # Set up mock data for _get_model_configuration
+        mock_configuration = {"name": "My Model", "version": "1.0"}
+        mock_get_model_configuration.return_value = mock_configuration
+        # Set up mock data for the request
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"example content"
+        with patch(
+            "roboprop_client.views._make_get_request", return_value=mock_response
+        ):
+            # Make a request to mymodel_detail
+            response = self.client.get("/mymodels/MyModel/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "My Model")
+        self.assertContains(response, "thumbnail.jpg")
+        self.assertContains(response, "1.0")

@@ -1,6 +1,7 @@
 import os
 import requests
 import base64
+import xmltodict
 from django.shortcuts import render
 from django.http import HttpResponse
 
@@ -43,6 +44,17 @@ def _get_roboprop_model_thumbnails(models, gallery=True):
     return thumbnails
 
 
+def _get_model_configuration(model):
+    url = fileserver_url + model + "/model.config"
+    response = _make_get_request(url)
+    xml_string = response.content.decode("utf-8")
+    # Parse as dictionary
+    xml_dict = xmltodict.parse(xml_string)
+    model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
+
+    return model_configuration
+
+
 def home(request):
     return render(request, "home.html")
 
@@ -57,11 +69,15 @@ def mymodels(request):
 
 
 def mymodel_detail(request, model):
-    model_details = {"name": model, "thumbnails": []}
+    model_details = {
+        "name": model,
+        "thumbnails": [],
+        "configuration": {},
+    }
 
     thumbnails = _get_roboprop_model_thumbnails([model], gallery=False)
-
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
+    model_details["configuration"] = _get_model_configuration(model)
 
     return render(request, "mymodel_detail.html", {"model": model_details})

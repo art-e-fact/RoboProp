@@ -2,3 +2,4 @@ django
 django-compressor
 python-dotenv
 requests
+xmltodict

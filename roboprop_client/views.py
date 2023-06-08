@@ -38,6 +38,7 @@ def _get_roboprop_model_thumbnails(models, gallery=True):
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
                 thumbnails.append({"name": model, "image": thumbnail})
         else:
+            # Just show a placeholder.
             thumbnails.append({"name": model, "image": None})
     return thumbnails
 
@@ -56,15 +57,11 @@ def mymodels(request):
 
 
 def mymodel_detail(request, model):
-    # url = f"https://example.com/api/{model}/"  # Replace with your API endpoint URL
-    # response = requests.get(url)
-    # if response.status_code == 200:
-    #     data = response.json()
-    #     return render(request, "mymodel_detail.html", {"data": data})
-    # else:
-    #     return HttpResponse("Error: Could not retrieve data")
-    model = {
-        "name": model,
-        "description": "This is a description of the model",
-    }
-    return render(request, "mymodel_detail.html", {"model": model})
+    model_details = {"name": model, "thumbnails": []}
+
+    thumbnails = _get_roboprop_model_thumbnails([model], gallery=False)
+
+    for thumbnail in thumbnails:
+        model_details["thumbnails"].append(thumbnail["image"])
+
+    return render(request, "mymodel_detail.html", {"model": model_details})

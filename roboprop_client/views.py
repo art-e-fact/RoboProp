@@ -4,7 +4,7 @@ import base64
 import xmltodict
 from django.shortcuts import render
 from django.http import HttpResponse
-from .utils import unflatten_dict
+from roboprop_client.utils import unflatten_dict
 
 headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
 fileserver_url = os.getenv("FILESERVER_URL")
@@ -55,7 +55,7 @@ def _get_model_configuration(model):
     return model_configuration
 
 
-def _config_as_xml(config):
+def _config_as_xml(config, asset_type):
     # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
     # tags with the same name), but seemingly not just length 1 which is what a django
     # form gives us (querydict). So we convert any lists of length 1 to a string.
@@ -63,12 +63,12 @@ def _config_as_xml(config):
         if isinstance(value, list) and len(value) == 1:
             config[key] = str(value[0])
 
-    config = unflatten_dict(config)
+    # If we start converting other things, this parent key
+    # will need to be done in a dynamic manner.
+    config = {asset_type: unflatten_dict(config)}
+    config_xml = xmltodict.unparse(config, pretty=True)
 
-    model_config_dict = {"model": config}
-    model_config_xml = xmltodict.unparse(model_config_dict, pretty=True)
-
-    return model_config_xml
+    return config_xml
 
 
 def home(request):
@@ -90,7 +90,7 @@ def mymodel_detail(request, model):
         model_config = dict(request.POST)
         model_config.pop("csrfmiddlewaretoken", None)
         # Split keys with "." into nested dictionaries
-        model_config = _config_as_xml(model_config)
+        model_config = _config_as_xml(model_config, "model")
         return HttpResponse("POST")
 
     model_details = {

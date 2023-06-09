@@ -24,7 +24,7 @@
             {% endfor %}
         </div>
     </div>
-    <form method="put" class="shadow p-2 my-4">
+    <form method="post" class="shadow p-2 my-4">
         {% csrf_token %}
         <div class="grid gap-2 mb-6 md:grid-cols-2">
             {% for key, value in model.configuration.items %}
@@ -40,14 +40,13 @@
                             <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         {% endif %}
                     </div>
+                {% else %}
+                    <div class="col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-900">description</label>
+                        <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
+                    </div>
                 {% endif %}
             {% endfor %}
-            {% if model.configuration.description %}
-                <div class="col-span-2">
-                    <label for="description" class="block text-sm font-medium text-gray-900">description</label>
-                    <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
-                </div>
-            {% endif %}
         </div>
         <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center mt-2">Save</button>
     </form>

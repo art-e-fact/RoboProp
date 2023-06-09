@@ -51,8 +51,31 @@ def _get_model_configuration(model):
     # Parse as dictionary
     xml_dict = xmltodict.parse(xml_string)
     model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
-
     return model_configuration
+
+
+def _config_as_xml(config):
+    result = {}
+    # Convert list values with length one to strings
+    for key, value in config.items():
+        if isinstance(value, list) and len(value) == 1:
+            config[key] = str(value[0])
+    for key, value in config.items():
+        if "." in key:
+            parts = key.split(".")
+            sub_dict = result
+            for part in parts[:-1]:
+                if part not in sub_dict:
+                    sub_dict[part] = {}
+                sub_dict = sub_dict[part]
+            sub_dict[parts[-1]] = value
+        else:
+            result[key] = value
+
+    model_config_dict = {"model": result}
+    model_config_xml = xmltodict.unparse(model_config_dict, pretty=True)
+
+    return model_config_xml
 
 
 def home(request):
@@ -69,6 +92,14 @@ def mymodels(request):
 
 
 def mymodel_detail(request, model):
+    if request.method == "POST":
+        # Parse request.POST as dictionary
+        model_config = dict(request.POST)
+        model_config.pop("csrfmiddlewaretoken", None)
+        # Split keys with "." into nested dictionaries
+        model_config = _config_as_xml(model_config)
+        return HttpResponse("POST")
+
     model_details = {
         "name": model,
         "thumbnails": [],

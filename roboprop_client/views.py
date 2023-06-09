@@ -4,6 +4,7 @@ import base64
 import xmltodict
 from django.shortcuts import render
 from django.http import HttpResponse
+from .utils import unflatten_dict
 
 headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
 fileserver_url = os.getenv("FILESERVER_URL")
@@ -55,24 +56,16 @@ def _get_model_configuration(model):
 
 
 def _config_as_xml(config):
-    result = {}
-    # Convert list values with length one to strings
+    # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
+    # tags with the same name), but seemingly not just length 1 which is what a django
+    # form gives us (querydict). So we convert any lists of length 1 to a string.
     for key, value in config.items():
         if isinstance(value, list) and len(value) == 1:
             config[key] = str(value[0])
-    for key, value in config.items():
-        if "." in key:
-            parts = key.split(".")
-            sub_dict = result
-            for part in parts[:-1]:
-                if part not in sub_dict:
-                    sub_dict[part] = {}
-                sub_dict = sub_dict[part]
-            sub_dict[parts[-1]] = value
-        else:
-            result[key] = value
 
-    model_config_dict = {"model": result}
+    config = unflatten_dict(config)
+
+    model_config_dict = {"model": config}
     model_config_xml = xmltodict.unparse(model_config_dict, pretty=True)
 
     return model_config_xml

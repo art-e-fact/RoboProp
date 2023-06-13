@@ -3,17 +3,22 @@
     <div class="grid gap-2 mb-6 md:grid-cols-2" id="fields-container">
         {% for key, value in model.configuration.items %}
             {% if key != 'description' %}
-                <div class="mt-1">
-                    <label for="{{ key }}" class="block text-sm font-medium text-gray-900">{{ key }}</label>
-                    <div class="flex items-center">
-                        <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="deleteField(this)">X</button>
+                <div class="flex items-center mb-2" id="{{ key }}-field">
+                    <div class="flex flex-col w-full">
+                        <label for="{{ key }}" class="block text-sm font-medium text-gray-900 mb-1">{{ key }}</label>
+                        <div class="relative flex-grow">
+                            <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
+                            <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('{{ key }}-field')">x</button>
+                        </div>
                     </div>
                 </div>
             {% else %}
-                <div class="col-span-2">
+                <div class="col-span-2" id="description-field">
                     <label for="description" class="block text-sm font-medium text-gray-900">description</label>
-                    <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
+                    <div class="relative flex-grow">
+                        <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
+                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('{{ key }}-field')">x</button>
+                    </div>
                 </div>
             {% endif %}
         {% endfor %}
@@ -47,21 +52,25 @@
         var container = document.getElementById("fields-container");
         var newFieldLabel = document.getElementById("new_field_label").value;
         var newField = document.createElement("div");
+        var newFieldId = "field-" + Date.now(); // Generate a unique ID for the new field
+        newField.setAttribute("id", newFieldId); // Set the ID of the new field
         newField.innerHTML = `
-            <div class="mt-1">
-                <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900">${newFieldLabel}</label>
-                <div class="flex items-center">
-                    <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                    <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="deleteField(this)">X</button>
+            <div class="flex items-center mb-2">
+                <div class="flex flex-col w-full">
+                    <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900 mb-1">${newFieldLabel}</label>
+                    <div class="relative flex-grow">
+                        <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
+                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('${newFieldId}')">x</button>
+                    </div>
                 </div>
             </div>
         `;
         container.appendChild(newField);
     }
 
-    function deleteField(button) {
-        var field = button.parentNode.parentNode;
-        field.parentNode.removeChild(field);
+    function deleteField(fieldId) {
+        var field = document.getElementById(fieldId);
+        field.remove();
     }
 
     function toggleVisibility() {

@@ -5,7 +5,10 @@
             {% if key != 'description' %}
                 <div class="mt-1">
                     <label for="{{ key }}" class="block text-sm font-medium text-gray-900">{{ key }}</label>
-                    <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <div class="flex items-center">
+                        <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="deleteField(this)">X</button>
+                    </div>
                 </div>
             {% else %}
                 <div class="col-span-2">
@@ -47,10 +50,18 @@
         newField.innerHTML = `
             <div class="mt-1">
                 <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900">${newFieldLabel}</label>
-                <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 mb-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <div class="flex items-center">
+                    <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="deleteField(this)">X</button>
+                </div>
             </div>
         `;
         container.appendChild(newField);
+    }
+
+    function deleteField(button) {
+        var field = button.parentNode.parentNode;
+        field.parentNode.removeChild(field);
     }
 
     function toggleVisibility() {

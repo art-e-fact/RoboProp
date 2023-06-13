@@ -92,6 +92,7 @@ def mymodel_detail(request, model):
         # Convert a Django QueryDict to a dictionary
         model_config = dict(request.POST)
         model_config.pop("csrfmiddlewaretoken", None)
+        print(model_config)
         # Convert to xml before making out PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration

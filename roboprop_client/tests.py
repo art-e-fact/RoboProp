@@ -64,6 +64,15 @@ class ViewsTestCase(TestCase):
         self.assertContains(response, "1.0")
 
 
+"""
+At present, unflatten_dict and flatten_dict are designed to be used with
+model.config files, i.e for metadata, where a huge amount of nesting / 
+complexity is not expected. If it comes to a point of also wanting to 
+support full on sdf models and worlds, these tests will want to be more
+thorough.
+"""
+
+
 class UtilsTestCase(TestCase):
     def test_unflatten_dict(self):
         flat_dict = {

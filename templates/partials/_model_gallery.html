@@ -1,0 +1,20 @@
+<div class="grid gap-4">
+    {% if model.thumbnails|first %}
+    <div class="mx-auto">
+            <img class="h-auto max-h-72 max-w-full rounded-lg" src="data:image/png;base64,{{ model.thumbnails|first }}">
+        </div>
+    {% else %}
+        <div class="mx-auto">
+            <img class="h-auto max-h-60 max-w-full rounded-lg" src="/static/images/placeholder.png">
+        </div>
+    {% endif %}
+    <div class="grid grid-cols-4 gap-4">
+        {% for thumbnail in model.thumbnails %}
+            {% if not forloop.first %}
+                <div class="shadow flex items-center justify-center">
+                    <img class="h-auto max-h-56 max-w-full rounded-lg" src="data:image/png;base64,{{ thumbnail }}">
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

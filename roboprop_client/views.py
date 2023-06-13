@@ -114,6 +114,5 @@ def mymodel_detail(request, model):
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
     model_details["configuration"] = _get_model_configuration(model)
-    print(model_details["configuration"])
 
     return render(request, "mymodel_detail.html", {"model": model_details})

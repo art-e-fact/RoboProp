@@ -2,7 +2,7 @@ import os
 import requests
 import base64
 import xmltodict
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from roboprop_client.utils import unflatten_dict
 
@@ -51,6 +51,7 @@ def _get_model_configuration(model):
     xml_string = response.content.decode("utf-8")
     # Parse as dictionary
     xml_dict = xmltodict.parse(xml_string)
+
     model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
     return model_configuration
 
@@ -63,12 +64,12 @@ def _config_as_xml(config, asset_type):
         if isinstance(value, list) and len(value) == 1:
             config[key] = str(value[0])
 
-    # If we start converting other things, this parent key
-    # will need to be done in a dynamic manner.
     config = {asset_type: unflatten_dict(config)}
-    config_xml = xmltodict.unparse(config, pretty=True)
-
-    return config_xml
+    # Yes, weird but http request doesnt seem to like it unless
+    # triple quoted. the final ">" seems to get cut off otherwise.
+    xml_string = f"""{xmltodict.unparse(config, pretty=True)}
+"""
+    return xml_string
 
 
 def home(request):
@@ -85,14 +86,21 @@ def mymodels(request):
 
 
 def mymodel_detail(request, model):
+    # Using POST to save ourselves writing a bunch of JS
+    # the final API call will be PUT.
     if request.method == "POST":
-        # Parse request.POST as dictionary
+        # Convert a Django QueryDict to a dictionary
         model_config = dict(request.POST)
         model_config.pop("csrfmiddlewaretoken", None)
-        # Split keys with "." into nested dictionaries
+        # Convert to xml before making out PUT request to update.
         model_config = _config_as_xml(model_config, "model")
-        return HttpResponse("POST")
+        # Send an HTTP PUT request to update the model configuration
+        url = fileserver_url + model + "/model.config"
+        response = requests.put(url, data=model_config, headers=headers)
+        response.raise_for_status()
+        return redirect("mymodel_detail", model=model)
 
+    # GET
     model_details = {
         "name": model,
         "thumbnails": [],

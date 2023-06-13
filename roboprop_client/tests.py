@@ -61,7 +61,8 @@ class ViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "My Model")
         self.assertContains(response, "thumbnail.jpg")
-        self.assertContains(response, "1.0")        
+        self.assertContains(response, "1.0")
+
 
 class UtilsTestCase(TestCase):
     def test_unflatten_dict(self):

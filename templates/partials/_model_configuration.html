@@ -52,16 +52,15 @@
         var container = document.getElementById("fields-container");
         var newFieldLabel = document.getElementById("new_field_label").value;
         var newField = document.createElement("div");
-        var newFieldId = "field-" + Date.now(); // Generate a unique ID for the new field
-        newField.setAttribute("id", newFieldId); // Set the ID of the new field
+        var newFieldId = newFieldLabel + "-field";
+        newField.setAttribute("id", newFieldId);
+        newField.setAttribute("class", "flex items-center mb-2");
         newField.innerHTML = `
-            <div class="flex items-center mb-2">
-                <div class="flex flex-col w-full">
-                    <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900 mb-1">${newFieldLabel}</label>
-                    <div class="relative flex-grow">
-                        <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
-                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('${newFieldId}')">x</button>
-                    </div>
+            <div class="flex flex-col w-full">
+                <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900 mb-1">${newFieldLabel}</label>
+                <div class="relative flex-grow">
+                    <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
+                    <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('${newFieldId}')">x</button>
                 </div>
             </div>
         `;

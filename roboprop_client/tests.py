@@ -1,7 +1,7 @@
 from unittest.mock import patch, Mock
 from django.test import TestCase
 from roboprop_client.views import _get_models, _get_roboprop_model_thumbnails
-from roboprop_client.utils import unflatten_dict
+from roboprop_client.utils import unflatten_dict, flatten_dict
 
 
 class ViewsTestCase(TestCase):
@@ -81,5 +81,24 @@ class UtilsTestCase(TestCase):
                     "version": "1.0",
                     "sdf": {"@version": "1.5", "#text": "model.sdf"},
                 }
+            },
+        )
+
+    def test_flatten_dict(self):
+        nested_dict = {
+            "model": {
+                "name": "Cessna C-172",
+                "version": "1.0",
+                "sdf": {"@version": "1.5", "#text": "model.sdf"},
+            }
+        }
+        flat_dict = flatten_dict(nested_dict)
+        self.assertEqual(
+            flat_dict,
+            {
+                "model.name": "Cessna C-172",
+                "model.version": "1.0",
+                "model.sdf.@version": "1.5",
+                "model.sdf.#text": "model.sdf",
             },
         )

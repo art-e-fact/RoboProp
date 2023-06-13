@@ -4,7 +4,7 @@ import base64
 import xmltodict
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from roboprop_client.utils import unflatten_dict
+from roboprop_client.utils import unflatten_dict, flatten_dict
 
 headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
 fileserver_url = os.getenv("FILESERVER_URL")
@@ -53,6 +53,8 @@ def _get_model_configuration(model):
     xml_dict = xmltodict.parse(xml_string)
 
     model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
+    # Convert to a flat dictionary
+    model_configuration = flatten_dict(model_configuration)
     return model_configuration
 
 
@@ -112,5 +114,6 @@ def mymodel_detail(request, model):
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
     model_details["configuration"] = _get_model_configuration(model)
+    print(model_details["configuration"])
 
     return render(request, "mymodel_detail.html", {"model": model_details})

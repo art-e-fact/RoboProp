@@ -15,3 +15,16 @@ def unflatten_dict(dictionary):
         else:
             result[key] = value
     return result
+
+
+# A generic function that takes a dictionary of dictionaries
+# and dot-seperates them. e.g. {"a": {"b": 1}} becomes {"a.b": 1}
+def flatten_dict(dictionary, parent_key="", sep="."):
+    items = []
+    for key, value in dictionary.items():
+        new_key = f"{parent_key}{sep}{key}" if parent_key else key
+        if isinstance(value, dict):
+            items.extend(flatten_dict(value, new_key, sep=sep).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)

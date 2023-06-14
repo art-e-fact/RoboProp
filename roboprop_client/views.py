@@ -2,8 +2,9 @@ import os
 import requests
 import base64
 import xmltodict
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from roboprop_client.utils import unflatten_dict, flatten_dict
 
 headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
 fileserver_url = os.getenv("FILESERVER_URL")
@@ -50,9 +51,27 @@ def _get_model_configuration(model):
     xml_string = response.content.decode("utf-8")
     # Parse as dictionary
     xml_dict = xmltodict.parse(xml_string)
-    model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
 
+    model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
+    # Convert to a flat dictionary
+    model_configuration = flatten_dict(model_configuration)
     return model_configuration
+
+
+def _config_as_xml(config, asset_type):
+    # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
+    # tags with the same name), but seemingly not just length 1 which is what a django
+    # form gives us (querydict). So we convert any lists of length 1 to a string.
+    for key, value in config.items():
+        if isinstance(value, list) and len(value) == 1:
+            config[key] = str(value[0])
+
+    config = {asset_type: unflatten_dict(config)}
+    # Yes, weird but http request doesnt seem to like it unless
+    # triple quoted. the final ">" seems to get cut off otherwise.
+    xml_string = f"""{xmltodict.unparse(config, pretty=True)}
+"""
+    return xml_string
 
 
 def home(request):
@@ -69,6 +88,22 @@ def mymodels(request):
 
 
 def mymodel_detail(request, model):
+    # Using POST to save ourselves writing a bunch of JS
+    # the final API call will be PUT.
+    if request.method == "POST":
+        # Convert a Django QueryDict to a dictionary
+        model_config = dict(request.POST)
+        model_config.pop("csrfmiddlewaretoken", None)
+        print(model_config)
+        # Convert to xml before making out PUT request to update.
+        model_config = _config_as_xml(model_config, "model")
+        # Send an HTTP PUT request to update the model configuration
+        url = fileserver_url + model + "/model.config"
+        response = requests.put(url, data=model_config, headers=headers)
+        response.raise_for_status()
+        return redirect("mymodel_detail", model=model)
+
+    # GET
     model_details = {
         "name": model,
         "thumbnails": [],

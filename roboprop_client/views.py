@@ -116,3 +116,7 @@ def mymodel_detail(request, model):
     model_details["configuration"] = _get_model_configuration(model)
 
     return render(request, "mymodel_detail.html", {"model": model_details})
+
+
+def fuel(request, page=1):
+    return render(request, "fuel.html", {"page": page})

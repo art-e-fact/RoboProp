@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Find Models{% endblock %}
+
+{% block content %}
+    <form method="get" action="{% url 'find-models' %}">
+        <input type="text" name="search" placeholder="Search...">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if models %}
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
+            {% for model in models %}
+                <div class="flex flex-col items-center shadow shadow-action/50">
+                    <div class="mb-2">
+                        <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}https://fuel.gazebosim.org/1.0/{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
+                    </div>
+                    <div class="mb-2">
+                        <p>{{ model.name }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% comment %} <div class="mt-3">
+            {% if page > 1 %}
+                <a href="{% url 'fuel' page=page|add:"-1" %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Previous</a>
+            {% endif %}
+            <a href="{% url 'fuel' page=page|add:1 %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Next</a>
+        </div> {% endcomment %}
+    {% endif %}
+{% endblock %}

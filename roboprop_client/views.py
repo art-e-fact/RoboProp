@@ -118,5 +118,29 @@ def mymodel_detail(request, model):
     return render(request, "mymodel_detail.html", {"model": model_details})
 
 
-def fuel(request, page=1):
-    return render(request, "fuel.html", {"page": page})
+def find_models(request):
+    # Check if there is a search query via GET
+    search = request.GET.get("search")
+    models = []
+    if search:
+        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
+        response = requests.get(url)
+        # Convert the response to a dictionary
+        fuel_results = response.json()
+        if fuel_results:
+            for fuel_result in fuel_results:
+                fuel_model = {
+                    "type": "fuel",
+                    "name": fuel_result["name"],
+                    "owner": fuel_result["owner"],
+                    "description": fuel_result["description"],
+                    "thumbnail": fuel_result["thumbnail_url"],
+                }
+                models.append(fuel_model)
+
+    context = {
+        "search": search,
+        "models": models,
+    }
+
+    return render(request, "find-models.html", context=context)

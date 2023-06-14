@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 from django.test import TestCase
 from roboprop_client.views import _get_models, _get_roboprop_model_thumbnails
+from roboprop_client.utils import unflatten_dict, flatten_dict
 
 
 class ViewsTestCase(TestCase):
@@ -61,3 +62,52 @@ class ViewsTestCase(TestCase):
         self.assertContains(response, "My Model")
         self.assertContains(response, "thumbnail.jpg")
         self.assertContains(response, "1.0")
+
+
+"""
+At present, unflatten_dict and flatten_dict are designed to be used with
+model.config files, i.e for metadata, where a huge amount of nesting / 
+complexity is not expected. If it comes to a point of also wanting to 
+support full on sdf models and worlds, these tests will want to be more
+thorough.
+"""
+
+
+class UtilsTestCase(TestCase):
+    def test_unflatten_dict(self):
+        flat_dict = {
+            "model.name": "Cessna C-172",
+            "model.version": "1.0",
+            "model.sdf.@version": "1.5",
+            "model.sdf.#text": "model.sdf",
+        }
+        nested_dict = unflatten_dict(flat_dict)
+        self.assertEqual(
+            nested_dict,
+            {
+                "model": {
+                    "name": "Cessna C-172",
+                    "version": "1.0",
+                    "sdf": {"@version": "1.5", "#text": "model.sdf"},
+                }
+            },
+        )
+
+    def test_flatten_dict(self):
+        nested_dict = {
+            "model": {
+                "name": "Cessna C-172",
+                "version": "1.0",
+                "sdf": {"@version": "1.5", "#text": "model.sdf"},
+            }
+        }
+        flat_dict = flatten_dict(nested_dict)
+        self.assertEqual(
+            flat_dict,
+            {
+                "model.name": "Cessna C-172",
+                "model.version": "1.0",
+                "model.sdf.@version": "1.5",
+                "model.sdf.#text": "model.sdf",
+            },
+        )

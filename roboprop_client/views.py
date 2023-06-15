@@ -2,8 +2,9 @@ import os
 import requests
 import base64
 import xmltodict
+import json
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
 headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
@@ -27,7 +28,7 @@ def _get_models(url):
 def _get_roboprop_model_thumbnails(models, gallery=True):
     thumbnails = []
     for model in models:
-        url = fileserver_url + model + "/thumbnails/"
+        url = fileserver_url + "mymodels/" + model + "/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -35,6 +36,7 @@ def _get_roboprop_model_thumbnails(models, gallery=True):
                 # Just one thumbnail for each in mymodels.html
                 thumbnail_data = thumbnail_data[0:1]
             for data in thumbnail_data:
+                print("HELLO", data)
                 url = fileserver_url + data["path"] + "?is_base64=true"
                 response = _make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
@@ -46,7 +48,7 @@ def _get_roboprop_model_thumbnails(models, gallery=True):
 
 
 def _get_model_configuration(model):
-    url = fileserver_url + model + "/model.config"
+    url = fileserver_url + "mymodels/" + model + "/model.config"
     response = _make_get_request(url)
     xml_string = response.content.decode("utf-8")
     # Parse as dictionary
@@ -79,7 +81,7 @@ def home(request):
 
 
 def mymodels(request):
-    roboprop_models = _get_models(fileserver_url)
+    roboprop_models = _get_models(fileserver_url + "mymodels/")
     roboprop_model_thumbnails = _get_roboprop_model_thumbnails(roboprop_models)
     fuel_thumbnails = []  # TODO:
     gallery_thumbnails = roboprop_model_thumbnails + fuel_thumbnails
@@ -98,7 +100,7 @@ def mymodel_detail(request, model):
         # Convert to xml before making out PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
-        url = fileserver_url + model + "/model.config"
+        url = fileserver_url + "mymodels/" + model + "/model.config"
         response = requests.put(url, data=model_config, headers=headers)
         response.raise_for_status()
         return redirect("mymodel_detail", model=model)
@@ -111,6 +113,7 @@ def mymodel_detail(request, model):
     }
 
     thumbnails = _get_roboprop_model_thumbnails([model], gallery=False)
+
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
     model_details["configuration"] = _get_model_configuration(model)
@@ -139,10 +142,26 @@ def find_models(request):
                     "thumbnail": thumbnail_url,
                 }
                 models.append(fuel_model)
-
     context = {
         "search": search,
         "models": models,
     }
 
     return render(request, "find-models.html", context=context)
+
+
+def add_to_my_models(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        owner = request.POST.get("owner")
+        # make a POST Request to our fileserver
+        url = f"{fileserver_url}/fuelmodels/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        response_data = {"message": f"Success: Model: {name} added to My Models"}
+        return JsonResponse(response_data)
+    else:
+        return JsonResponse({"error": "Invalid request method"})
+
+
+# http://localhost/api/v2/files/fuel/3d_dollhouse_sofa/?url=https://fuel.gazebosim.org/1.0/GoogleResearch/models/3d_dollhouse_sofa.zip&extract=true&clean=true

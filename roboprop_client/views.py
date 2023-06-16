@@ -5,6 +5,7 @@ import xmltodict
 import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
+from django.core.cache import cache
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
@@ -145,27 +146,46 @@ def mymodel_detail(request, folder, name):
     return render(request, "mymodel_detail.html", {"model": model_details})
 
 
+def _search_and_cache(search):
+    # Check if the results are already cached
+    cache_key = f"search_results_{search}"
+    search_results = cache.get(cache_key)
+
+    # i.e if there is no cache
+    if not search_results:
+        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
+        response = requests.get(url)
+        # Convert the response to a dictionary
+        search_results = response.json()
+        # Cache the results for 5 minutes
+        cache.set(cache_key, search_results, 300)
+
+    return search_results
+
+
+def _get_model_details(result):
+    thumbnail_url = result.get("thumbnail_url", None)
+    return {
+        "type": "fuel",
+        "name": result["name"],
+        "owner": result["owner"],
+        "description": result["description"],
+        "thumbnail": thumbnail_url,
+    }
+
+
 def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
     models = []
 
     if search:
-        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        response = requests.get(url)
-        # Convert the response to a dictionary
-        fuel_results = response.json()
-        if fuel_results:
-            for fuel_result in fuel_results:
-                thumbnail_url = fuel_result.get("thumbnail_url", None)
-                fuel_model = {
-                    "type": "fuel",
-                    "name": fuel_result["name"],
-                    "owner": fuel_result["owner"],
-                    "description": fuel_result["description"],
-                    "thumbnail": thumbnail_url,
-                }
-                models.append(fuel_model)
+        search_results = _search_and_cache(search)
+
+        for result in search_results:
+            model_details = _get_model_details(result)
+            models.append(model_details)
+
     context = {
         "search": search,
         "models": models,

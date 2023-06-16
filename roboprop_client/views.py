@@ -16,6 +16,15 @@ def _make_get_request(url):
     return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
 
 
+def _make_put_request(url, data):
+    response = requests.put(
+        url,
+        data=data,
+        headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+    )
+    response.raise_for_status()
+
+
 def _get_models(url):
     models = []
     response = _make_get_request(url)
@@ -111,18 +120,12 @@ def mymodel_detail(request, folder, name):
     # the final API call will be PUT.
     if request.method == "POST":
         # Convert a Django QueryDict to a dictionary
-        model_config = dict(request.POST)
-        model_config.pop("csrfmiddlewaretoken", None)
-        # Convert to xml before making out PUT request to update.
+        model_config = dict(request.POST).pop("csrfmiddlewaretoken", None)
+        # Convert to xml before making our PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
-        url = FILESERVER_URL + folder + "/" + name + "/model.config"
-        response = requests.put(
-            url,
-            data=model_config,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-        )
-        response.raise_for_status()
+        url = f"{FILESERVER_URL}{folder}/{name}/model.config"
+        _make_put_request(url, model_config)
         return redirect("mymodel_detail", folder=folder, name=name)
 
     # GET

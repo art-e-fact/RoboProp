@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Find Models{% endblock %}
+
+{% block content %}
+    <div class="flex justify-center">
+        <form method="get" action="{% url 'find-models' %}">
+            <input type="text" name="search" placeholder="Search...">
+            <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Search</button>
+        </form>
+    </div>
+
+    {% if models %}
+        <p class="m-3">Found {{ models|length }} models using search term: {{ search }}</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
+            {% for model in models %}
+                <div class="flex flex-col items-center shadow shadow-action/50 relative">
+                    <p class="absolute top-0 left-0 bg-white rounded-lg p-1 m-1 bg-zinc-600">{{ model.type }}</p>
+                    <p class="absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addToMyModels('{{ model.name }}', '{{ model.owner }}')">+</p>
+                    <div class="mb-2">
+                        <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}https://fuel.gazebosim.org/1.0/{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-xs">{{ model.name }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if search and not models %}
+        <p class="m-3">No models found for search term: {{ search }} </p>
+    {% endif %}
+    
+
+        {% comment %} <div class="mt-3">
+            {% if page > 1 %}
+                <a href="{% url 'fuel' page=page|add:"-1" %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Previous</a>
+            {% endif %}
+            <a href="{% url 'fuel' page=page|add:1 %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Next</a>
+        </div> {% endcomment %}
+    <script>
+        function addToMyModels(name, owner) {
+            const data = {
+                'name': name,
+                'owner': owner,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            };
+            console.log(owner)
+            $.ajax({
+                url: '/add-to-my-models/',
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    // Handle the response data here
+                    console.log('Success:', response);
+                },
+                error: function(error) {
+                    console.error('Error:', error);
+                },
+            });
+        }
+    </script>
+{% endblock %}

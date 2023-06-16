@@ -104,6 +104,34 @@ def _config_as_xml(config, asset_type):
         raise ValueError(f"Failed to convert configuration to XML: {e}")
 
 
+def _search_and_cache(search):
+    # Check if the results are already cached
+    cache_key = f"search_results_{search}"
+    search_results = cache.get(cache_key)
+
+    # i.e if there is no cache
+    if not search_results:
+        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
+        response = requests.get(url)
+        # Convert the response to a dictionary
+        search_results = response.json()
+        # Cache the results for 5 minutes
+        cache.set(cache_key, search_results, 300)
+
+    return search_results
+
+
+def _get_model_details(result):
+    thumbnail_url = result.get("thumbnail_url", None)
+    return {
+        "type": "fuel",
+        "name": result["name"],
+        "owner": result["owner"],
+        "description": result["description"],
+        "thumbnail": thumbnail_url,
+    }
+
+
 """VIEWS"""
 
 
@@ -144,34 +172,6 @@ def mymodel_detail(request, folder, name):
     model_details["configuration"] = _get_model_configuration(name, folder)
 
     return render(request, "mymodel_detail.html", {"model": model_details})
-
-
-def _search_and_cache(search):
-    # Check if the results are already cached
-    cache_key = f"search_results_{search}"
-    search_results = cache.get(cache_key)
-
-    # i.e if there is no cache
-    if not search_results:
-        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        response = requests.get(url)
-        # Convert the response to a dictionary
-        search_results = response.json()
-        # Cache the results for 5 minutes
-        cache.set(cache_key, search_results, 300)
-
-    return search_results
-
-
-def _get_model_details(result):
-    thumbnail_url = result.get("thumbnail_url", None)
-    return {
-        "type": "fuel",
-        "name": result["name"],
-        "owner": result["owner"],
-        "description": result["description"],
-        "thumbnail": thumbnail_url,
-    }
 
 
 def find_models(request):

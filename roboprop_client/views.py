@@ -28,7 +28,7 @@ def _get_models(url):
 def _get_roboprop_model_thumbnails(models, folder, gallery=True):
     thumbnails = []
     for model in models:
-        url = fileserver_url + folder + model + "/thumbnails/"
+        url = fileserver_url + folder + "/" + model + "/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -39,15 +39,19 @@ def _get_roboprop_model_thumbnails(models, folder, gallery=True):
                 url = fileserver_url + data["path"] + "?is_base64=true"
                 response = _make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
-                thumbnails.append({"name": model, "image": thumbnail})
+                thumbnails.append(
+                    {"name": model, "image": thumbnail, "folder": folder.rstrip("/")}
+                )
         else:
             # Just show a placeholder.
-            thumbnails.append({"name": model, "image": None})
+            thumbnails.append(
+                {"name": model, "image": None, "folder": folder.rstrip("/")}
+            )
     return thumbnails
 
 
-def _get_model_configuration(model):
-    url = fileserver_url + "mymodels/" + model + "/model.config"
+def _get_model_configuration(model, folder):
+    url = fileserver_url + folder + "/" + model + "/model.config"
     response = _make_get_request(url)
     xml_string = response.content.decode("utf-8")
     # Parse as dictionary
@@ -81,15 +85,19 @@ def home(request):
 
 def mymodels(request):
     roboprop_models = _get_models(fileserver_url + "mymodels/")
-    roboprop_model_thumbnails = _get_roboprop_model_thumbnails(roboprop_models, "mymodels/")
+    roboprop_model_thumbnails = _get_roboprop_model_thumbnails(
+        roboprop_models, "mymodels"
+    )
     fuel_thumbnails = _get_models(fileserver_url + "fuelmodels/")
-    fuel_model_thumbnails = _get_roboprop_model_thumbnails(fuel_thumbnails, "fuelmodels/")
+    fuel_model_thumbnails = _get_roboprop_model_thumbnails(
+        fuel_thumbnails, "fuelmodels"
+    )
     gallery_thumbnails = roboprop_model_thumbnails + fuel_model_thumbnails
 
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
 
-def mymodel_detail(request, model):
+def mymodel_detail(request, folder, name):
     # Using POST to save ourselves writing a bunch of JS
     # the final API call will be PUT.
     if request.method == "POST":
@@ -99,23 +107,24 @@ def mymodel_detail(request, model):
         # Convert to xml before making out PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
-        url = fileserver_url + "mymodels/" + model + "/model.config"
+        url = fileserver_url + "mymodels/" + name + "/model.config"
         response = requests.put(url, data=model_config, headers=headers)
         response.raise_for_status()
-        return redirect("mymodel_detail", model=model)
+        return redirect("mymodel_detail", folder=folder, name=name)
 
     # GET
     model_details = {
-        "name": model,
+        "name": name,
         "thumbnails": [],
         "configuration": {},
+        "folder": folder.rstrip("/"),
     }
 
-    thumbnails = _get_roboprop_model_thumbnails([model], gallery=False)
+    thumbnails = _get_roboprop_model_thumbnails([name], folder, gallery=False)
 
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
-    model_details["configuration"] = _get_model_configuration(model)
+    model_details["configuration"] = _get_model_configuration(name, folder)
 
     return render(request, "mymodel_detail.html", {"model": model_details})
 

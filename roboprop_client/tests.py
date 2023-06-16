@@ -25,17 +25,16 @@ class ViewsTestCase(TestCase):
         mock_response.json.return_value = {
             "resource": [{"path": "/path/to/thumbnail.png"}]
         }
-        mock_content = b"example content"
+        mock_response.content = b"example content"
         with patch(
             "roboprop_client.views._make_get_request", return_value=mock_response
         ), patch(
             "roboprop_client.views.base64.b64encode", return_value=b"example base64"
-        ), patch(
-            "roboprop_client.views._make_get_request.content", return_value=mock_content
         ):
-            thumbnails = _get_roboprop_model_thumbnails(["model1"])
+            thumbnails = _get_roboprop_model_thumbnails(["model1"], "folder1")
             self.assertEqual(
-                thumbnails, [{"name": "model1", "image": "example base64"}]
+                thumbnails,
+                [{"name": "model1", "image": "example base64", "folder": "folder1"}],
             )
 
     @patch("roboprop_client.views._get_roboprop_model_thumbnails")
@@ -44,7 +43,7 @@ class ViewsTestCase(TestCase):
         self, mock_get_model_configuration, mock_get_roboprop_model_thumbnails
     ):
         # Set up mock data for _get_roboprop_model_thumbnails
-        mock_thumbnail = {"image": "thumbnail.jpg"}
+        mock_thumbnail = {"image": "thumbnail.jpg", "folder": "folder1"}
         mock_get_roboprop_model_thumbnails.return_value = [mock_thumbnail]
         # Set up mock data for _get_model_configuration
         mock_configuration = {"name": "My Model", "version": "1.0"}
@@ -57,7 +56,7 @@ class ViewsTestCase(TestCase):
             "roboprop_client.views._make_get_request", return_value=mock_response
         ):
             # Make a request to mymodel_detail
-            response = self.client.get("/mymodels/MyModel/")
+            response = self.client.get("/mymodels/folder1/MyModel/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "My Model")
         self.assertContains(response, "thumbnail.jpg")

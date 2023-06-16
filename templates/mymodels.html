@@ -13,13 +13,14 @@
     </div>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         {% for thumbnail in thumbnails %}
-        <a href="{% url 'mymodel_detail' model=thumbnail.name %}">
+        <a href="{% url 'mymodel_detail' folder=thumbnail.folder name=thumbnail.name %}">
             <div class="flex flex-col items-center shadow shadow-action/50">
                 <div class="mb-2">
                     <img class="h-44 w-auto max-w-full rounded-lg" src={% if thumbnail.image %}data:image/png;base64,{{ thumbnail.image }}{% else %}"/static/images/placeholder.png"{% endif %} alt="{{ thumbnail.name }}">
                 </div>
                 <div class="mb-2">
                     <p>{{ thumbnail.name }}</p>
+                    <p>{{ thumbnail.folder }}</p>
                 </div>
             </div>
         </a>

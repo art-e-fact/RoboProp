@@ -1,6 +1,6 @@
 from unittest.mock import patch, Mock
 from django.test import TestCase
-from roboprop_client.views import _get_models, _get_roboprop_model_thumbnails
+from roboprop_client.views import _get_models, _get_model_thumbnails
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
 
@@ -31,20 +31,20 @@ class ViewsTestCase(TestCase):
         ), patch(
             "roboprop_client.views.base64.b64encode", return_value=b"example base64"
         ):
-            thumbnails = _get_roboprop_model_thumbnails(["model1"], "folder1")
+            thumbnails = _get_model_thumbnails(["model1"], "folder1")
             self.assertEqual(
                 thumbnails,
                 [{"name": "model1", "image": "example base64", "folder": "folder1"}],
             )
 
-    @patch("roboprop_client.views._get_roboprop_model_thumbnails")
+    @patch("roboprop_client.views._get_model_thumbnails")
     @patch("roboprop_client.views._get_model_configuration")
     def test_mymodel_detail(
-        self, mock_get_model_configuration, mock_get_roboprop_model_thumbnails
+        self, mock_get_model_configuration, mock_get_model_thumbnails
     ):
         # Set up mock data for _get_roboprop_model_thumbnails
         mock_thumbnail = {"image": "thumbnail.jpg", "folder": "folder1"}
-        mock_get_roboprop_model_thumbnails.return_value = [mock_thumbnail]
+        mock_get_model_thumbnails.return_value = [mock_thumbnail]
         # Set up mock data for _get_model_configuration
         mock_configuration = {"name": "My Model", "version": "1.0"}
         mock_get_model_configuration.return_value = mock_configuration

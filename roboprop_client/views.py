@@ -7,12 +7,13 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
-headers = {"X-DreamFactory-API-Key": os.getenv("FILESERVER_API_KEY")}
-fileserver_url = os.getenv("FILESERVER_URL")
+FILESERVER_API_KEY = "X-DreamFactory-API-Key"
+FILESERVER_API_KEY_VALUE = os.getenv("FILESERVER_API_KEY", "")
+FILESERVER_URL = os.getenv("FILESERVER_URL", "")
 
 
 def _make_get_request(url):
-    return requests.get(url, headers=headers)
+    return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
 
 
 def _get_models(url):
@@ -25,10 +26,10 @@ def _get_models(url):
     return models
 
 
-def _get_roboprop_model_thumbnails(models, folder, gallery=True):
+def _get_model_thumbnails(models, folder, gallery=True):
     thumbnails = []
     for model in models:
-        url = fileserver_url + folder + "/" + model + "/thumbnails/"
+        url = f"{FILESERVER_URL}{folder}/{model}/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -36,7 +37,7 @@ def _get_roboprop_model_thumbnails(models, folder, gallery=True):
                 # Just one thumbnail for each in mymodels.html
                 thumbnail_data = thumbnail_data[0:1]
             for data in thumbnail_data:
-                url = fileserver_url + data["path"] + "?is_base64=true"
+                url = f"{FILESERVER_URL}{data['path']}?is_base64=true"
                 response = _make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
                 thumbnails.append(
@@ -50,33 +51,50 @@ def _get_roboprop_model_thumbnails(models, folder, gallery=True):
     return thumbnails
 
 
-def _get_model_configuration(model, folder):
-    url = fileserver_url + folder + "/" + model + "/model.config"
-    response = _make_get_request(url)
-    xml_string = response.content.decode("utf-8")
-    # Parse as dictionary
-    xml_dict = xmltodict.parse(xml_string)
+def _get_all_model_thumbnails():
+    roboprop_models = _get_models(FILESERVER_URL + "mymodels/")
+    fuel_models = _get_models(FILESERVER_URL + "fuelmodels/")
+    roboprop_model_thumbnails = _get_model_thumbnails(roboprop_models, "mymodels")
+    fuel_model_thumbnails = _get_model_thumbnails(fuel_models, "fuelmodels")
+    thumbnails = roboprop_model_thumbnails + fuel_model_thumbnails
+    return thumbnails
 
-    model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
-    # Convert to a flat dictionary
-    model_configuration = flatten_dict(model_configuration)
+
+def _get_model_configuration(model, folder):
+    url = f"{FILESERVER_URL}{folder}/{model}/model.config"
+    response = _make_get_request(url)
+    response.raise_for_status()
+    xml_string = response.content.decode("utf-8")
+    try:
+        xml_dict = xmltodict.parse(xml_string)
+        model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
+        # Convert to a flat dictionary using dot notation
+        model_configuration = flatten_dict(model_configuration)
+    except (TypeError, KeyError) as e:
+        raise ValueError(f"Failed to parse model configuration for {model}: {e}")
     return model_configuration
 
 
 def _config_as_xml(config, asset_type):
-    # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
-    # tags with the same name), but seemingly not just length 1 which is what a django
-    # form gives us (querydict). So we convert any lists of length 1 to a string.
-    for key, value in config.items():
-        if isinstance(value, list) and len(value) == 1:
-            config[key] = str(value[0])
+    try:
+        # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
+        # tags with the same name), but seemingly not just length 1 which is what a django
+        # form gives us (querydict). So we convert any lists of length 1 to a string.
+        for key, value in config.items():
+            if isinstance(value, list) and len(value) == 1:
+                config[key] = str(value[0])
 
-    config = {asset_type: unflatten_dict(config)}
-    # Yes, weird but http request doesnt seem to like it unless
-    # triple quoted. the final ">" seems to get cut off otherwise.
-    xml_string = f"""{xmltodict.unparse(config, pretty=True)}
+        config = {asset_type: unflatten_dict(config)}
+        # Yes, weird but http request doesnt seem to like it unless
+        # triple quoted. the final ">" seems to get cut off otherwise.
+        xml_string = f"""{xmltodict.unparse(config, pretty=True)}
 """
-    return xml_string
+        return xml_string
+    except (TypeError, KeyError) as e:
+        raise ValueError(f"Failed to convert configuration to XML: {e}")
+
+
+"""VIEWS"""
 
 
 def home(request):
@@ -84,16 +102,7 @@ def home(request):
 
 
 def mymodels(request):
-    roboprop_models = _get_models(fileserver_url + "mymodels/")
-    roboprop_model_thumbnails = _get_roboprop_model_thumbnails(
-        roboprop_models, "mymodels"
-    )
-    fuel_thumbnails = _get_models(fileserver_url + "fuelmodels/")
-    fuel_model_thumbnails = _get_roboprop_model_thumbnails(
-        fuel_thumbnails, "fuelmodels"
-    )
-    gallery_thumbnails = roboprop_model_thumbnails + fuel_model_thumbnails
-
+    gallery_thumbnails = _get_all_model_thumbnails()
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
 
@@ -107,8 +116,12 @@ def mymodel_detail(request, folder, name):
         # Convert to xml before making out PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
-        url = fileserver_url + "mymodels/" + name + "/model.config"
-        response = requests.put(url, data=model_config, headers=headers)
+        url = FILESERVER_URL + folder + "/" + name + "/model.config"
+        response = requests.put(
+            url,
+            data=model_config,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+        )
         response.raise_for_status()
         return redirect("mymodel_detail", folder=folder, name=name)
 
@@ -120,7 +133,7 @@ def mymodel_detail(request, folder, name):
         "folder": folder.rstrip("/"),
     }
 
-    thumbnails = _get_roboprop_model_thumbnails([name], folder, gallery=False)
+    thumbnails = _get_model_thumbnails([name], folder, gallery=False)
 
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
@@ -163,13 +176,12 @@ def add_to_my_models(request):
         name = request.POST.get("name")
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
-        url = f"{fileserver_url}/fuelmodels/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = requests.post(url, headers=headers)
+        url = f"{FILESERVER_URL}/fuelmodels/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+        response = requests.post(
+            url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
+        )
         response.raise_for_status()
         response_data = {"message": f"Success: Model: {name} added to My Models"}
         return JsonResponse(response_data)
     else:
         return JsonResponse({"error": "Invalid request method"})
-
-
-# http://localhost/api/v2/files/fuel/3d_dollhouse_sofa/?url=https://fuel.gazebosim.org/1.0/GoogleResearch/models/3d_dollhouse_sofa.zip&extract=true&clean=true

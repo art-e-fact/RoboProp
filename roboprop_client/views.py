@@ -6,6 +6,8 @@ import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
+from django.contrib import auth
+from django.contrib.auth.models import User
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
@@ -137,6 +139,39 @@ def _get_model_details(result):
 
 def home(request):
     return render(request, "home.html")
+
+
+def login(request):
+    return render(request, "login.html")
+
+
+def register(request):
+    if request.method == "POST":
+        username = request.POST["username"]
+        email = request.POST["email"]
+        password1 = request.POST["password1"]
+        password2 = request.POST["password2"]
+
+        if password1 == password2:
+            try:
+                user = User.objects.create_user(username, email, password1)
+                user.save()
+                auth.login(request, user)
+                return redirect("chatbot")
+            except:
+                error_message = "Error creating user"
+                return render(
+                    request, "register.html", {"error_message": error_message}
+                )
+        else:
+            error_message = "Passwords do not match"
+            return render(request, "register.html", {"error_message": error_message})
+
+    return render(request, "register.html")
+
+
+def logout(request):
+    return auth.logout(request)
 
 
 def mymodels(request):

@@ -138,10 +138,23 @@ def _get_model_details(result):
 
 
 def home(request):
+    if request.user.id is None:
+        return redirect("login")
+
     return render(request, "home.html")
 
 
 def login(request):
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = auth.authenticate(request, username=username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            return redirect("chatbot")
+        else:
+            error_message = "Invalid credentials"
+            return render(request, "login.html", {"error_message": error_message})
     return render(request, "login.html")
 
 
@@ -171,7 +184,8 @@ def register(request):
 
 
 def logout(request):
-    return auth.logout(request)
+    auth.logout(request)
+    return redirect("login")
 
 
 def mymodels(request):

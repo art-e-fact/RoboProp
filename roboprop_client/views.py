@@ -161,6 +161,11 @@ def login(request):
     return render(request, "login.html")
 
 
+def logout(request):
+    auth.logout(request)
+    return redirect("login")
+
+
 def register(request):
     if request.method == "POST":
         username = request.POST["username"]
@@ -184,11 +189,6 @@ def register(request):
             return render(request, "register.html", {"error_message": error_message})
 
     return render(request, "register.html")
-
-
-def logout(request):
-    auth.logout(request)
-    return redirect("login")
 
 
 @login_required

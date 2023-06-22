@@ -10,4 +10,8 @@ urlpatterns = [
     ),
     path("find-models/", views.find_models, name="find-models"),
     path("add-to-my-models/", views.add_to_my_models, name="add_to_my_models"),
+    path("login", views.login, name="login"),
+    path("logout", views.logout, name="logout"),
+    path("register", views.register, name="register"),
+    path("settings/", views.user_settings, name="user_settings"),
 ]

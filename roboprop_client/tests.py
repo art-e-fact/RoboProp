@@ -1,8 +1,52 @@
 from unittest.mock import patch, Mock
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.core.cache import cache
+from django.contrib.auth.models import User
 from roboprop_client.views import _get_models, _get_model_thumbnails, _search_and_cache
 from roboprop_client.utils import unflatten_dict, flatten_dict
+
+
+class UserTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.register_url = reverse("register")
+
+    def test_register_new_user_success(self):
+        data = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "testpassword",
+            "password_confirm": "testpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("home"))
+        self.assertTrue(User.objects.filter(username="testuser").exists())
+
+    def test_register_password_mismatch(self):
+        data = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "testpassword",
+            "password_confirm": "mismatchedpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Passwords do not match")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_register_invalid_data(self):
+        data = {
+            "username": "",
+            "email": "invalidemail",
+            "password": "testpassword",
+            "password_confirm": "testpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Error creating user")
+        self.assertFalse(User.objects.filter(username="").exists())
 
 
 class ViewsTestCase(TestCase):

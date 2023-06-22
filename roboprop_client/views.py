@@ -8,6 +8,9 @@ from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
 from django.contrib import auth
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from roboprop_client.utils import unflatten_dict, flatten_dict
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
@@ -162,12 +165,12 @@ def register(request):
     if request.method == "POST":
         username = request.POST["username"]
         email = request.POST["email"]
-        password1 = request.POST["password1"]
-        password2 = request.POST["password2"]
+        password = request.POST["password"]
+        password_confirm = request.POST["password_confirm"]
 
-        if password1 == password2:
+        if password == password_confirm:
             try:
-                user = User.objects.create_user(username, email, password1)
+                user = User.objects.create_user(username, email, password)
                 user.save()
                 auth.login(request, user)
                 return redirect("home")
@@ -186,6 +189,44 @@ def register(request):
 def logout(request):
     auth.logout(request)
     return redirect("login")
+
+
+@login_required
+def user_settings(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        current_password = request.POST.get("current_password")
+        new_password = request.POST.get("new_password")
+        new_password_confirm = request.POST.get("new_password_confirm")
+
+        user = request.user
+        if not user.check_password(current_password):
+            messages.error(request, "Incorrect password.")
+            return redirect("user_settings")
+
+        # Check if the form is empty
+        if not any([username, email, new_password]):
+            messages.warning(request, "Nothing to change.")
+            return redirect("user_settings")
+
+        if username:
+            user.username = username
+        if email:
+            user.email = email
+        if new_password:
+            if new_password == new_password_confirm:
+                user.set_password(new_password)
+            else:
+                messages.error(request, "New Password does not match.")
+                return redirect("user_settings")
+
+        user.save()
+        update_session_auth_hash(request, user)  # Important!
+        messages.success(request, "Your account has been updated!")
+        return redirect("user_settings")
+
+    return render(request, "user-settings.html")
 
 
 def mymodels(request):

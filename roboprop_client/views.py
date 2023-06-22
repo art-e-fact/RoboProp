@@ -156,8 +156,8 @@ def login(request):
             auth.login(request, user)
             return redirect("home")
         else:
-            error_message = "Invalid credentials"
-            return render(request, "login.html", {"error_message": error_message})
+            messages.error(request, "Invalid credentials")
+            return render(request, "login.html")
     return render(request, "login.html")
 
 
@@ -180,13 +180,11 @@ def register(request):
                 auth.login(request, user)
                 return redirect("home")
             except:
-                error_message = "Error creating user"
-                return render(
-                    request, "register.html", {"error_message": error_message}
-                )
+                messages.error(request, "Error creating user")
+                return render(request, "register.html")
         else:
-            error_message = "Passwords do not match"
-            return render(request, "register.html", {"error_message": error_message})
+            messages.error(request, "Passwords do not match")
+            return render(request, "register.html")
 
     return render(request, "register.html")
 

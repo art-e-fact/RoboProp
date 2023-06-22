@@ -4,11 +4,9 @@
 
 {% block content %}
 <div class="flex justify-center">
-    <div class="block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow">
+    <div class="block w-1/2 p-6 bg-white border border-gray-200 rounded-lg shadow">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Register</h5>
-        {% if error_message %}
-            <div class="alert alert-danger" role="alert">{{ error_message }}</div>
-        {% endif %}
+        {% include "components/_message_block.html" %}
         <form method="post">
             {% csrf_token %}
             <div class="mb-6">

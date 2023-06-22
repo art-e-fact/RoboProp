@@ -14,13 +14,17 @@
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
     <body class="bg-slate-50">
-        {% include 'partials/_navbar.html' %} 
-        <div class="p-4 sm:ml-64">
+        {% if not '/login' in request.path and not '/register' in request.path %}
+            {% include 'partials/_navbar.html' %}
+            <div class="p-4 sm:ml-64">
+        {% endif %}
             <div class="container pt-16">
             {% block content %}
             {% endblock %}
             </div>
-        </div>
+        {% if not '/login' in request.path and not '/register' in request.path %}
+            </div>
+        {% endif %}
         <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.5/flowbite.min.js"></script>
     </body>
 </html>

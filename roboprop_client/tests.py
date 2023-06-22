@@ -1,8 +1,172 @@
 from unittest.mock import patch, Mock
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.core.cache import cache
+from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from roboprop_client.views import _get_models, _get_model_thumbnails, _search_and_cache
 from roboprop_client.utils import unflatten_dict, flatten_dict
+
+
+class RegisterUserTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.register_url = reverse("register")
+
+    def test_register_new_user_success(self):
+        data = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "testpassword",
+            "password_confirm": "testpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("home"))
+        self.assertTrue(User.objects.filter(username="testuser").exists())
+
+    def test_register_password_mismatch(self):
+        data = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "testpassword",
+            "password_confirm": "mismatchedpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Passwords do not match")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_register_invalid_data(self):
+        data = {
+            "username": "",
+            "email": "invalidemail",
+            "password": "testpassword",
+            "password_confirm": "testpassword",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Error creating user")
+        self.assertFalse(User.objects.filter(username="").exists())
+
+
+class LoginUserTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.login_url = reverse("login")
+        self.user = User.objects.create_user(
+            username="testuser", email="testuser@example.com", password="testpassword"
+        )
+
+    def test_login_view_success(self):
+        data = {
+            "username": "testuser",
+            "password": "testpassword",
+        }
+        response = self.client.post(self.login_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("home"))
+
+    def test_login_view_invalid_credentials(self):
+        data = {
+            "username": "testuser",
+            "password": "wrongpassword",
+        }
+        response = self.client.post(self.login_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Invalid credentials")
+
+    def tearDown(self):
+        self.user.delete()
+
+
+class UserSettingsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="testuser@example.com", password="testpassword"
+        )
+        self.client.login(username="testuser", password="testpassword")
+        self.user_settings_url = reverse("user_settings")
+
+    def test_user_settings_view_success(self):
+        data = {
+            "username": "newusername",
+            "email": "newemail@example.com",
+            "current_password": "testpassword",
+            "new_password": "newpassword",
+            "new_password_confirm": "newpassword",
+        }
+        response = self.client.post(self.user_settings_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.user_settings_url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Your account has been updated!")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "newusername")
+        self.assertEqual(self.user.email, "newemail@example.com")
+        self.assertTrue(self.user.check_password("newpassword"))
+
+    def test_user_settings_view_incorrect_password(self):
+        data = {
+            "username": "newusername",
+            "email": "newemail@example.com",
+            "current_password": "wrongpassword",
+            "new_password": "newpassword",
+            "new_password_confirm": "newpassword",
+        }
+        response = self.client.post(self.user_settings_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.user_settings_url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Incorrect password.")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "testuser")
+        self.assertEqual(self.user.email, "testuser@example.com")
+        self.assertTrue(self.user.check_password("testpassword"))
+
+    def test_user_settings_view_no_changes(self):
+        data = {
+            "username": "",
+            "email": "",
+            "current_password": "testpassword",
+            "new_password": "",
+            "new_password_confirm": "",
+        }
+        response = self.client.post(self.user_settings_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.user_settings_url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Nothing to change.")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "testuser")
+        self.assertEqual(self.user.email, "testuser@example.com")
+        self.assertTrue(self.user.check_password("testpassword"))
+
+    def test_user_settings_view_new_password_mismatch(self):
+        data = {
+            "username": "newusername",
+            "email": "newemail@example.com",
+            "current_password": "testpassword",
+            "new_password": "newpassword",
+            "new_password_confirm": "wrongpassword",
+        }
+        response = self.client.post(self.user_settings_url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.user_settings_url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "New Password does not match.")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "testuser")
+        self.assertEqual(self.user.email, "testuser@example.com")
+        self.assertTrue(self.user.check_password("testpassword"))
+
+    def tearDown(self):
+        self.user.delete()
 
 
 class ViewsTestCase(TestCase):

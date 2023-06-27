@@ -67,11 +67,8 @@ def _get_model_thumbnails(models, folder, gallery=True):
 
 
 def _get_all_model_thumbnails():
-    roboprop_models = _get_models(FILESERVER_URL + "mymodels/")
-    fuel_models = _get_models(FILESERVER_URL + "fuelmodels/")
-    roboprop_model_thumbnails = _get_model_thumbnails(roboprop_models, "mymodels")
-    fuel_model_thumbnails = _get_model_thumbnails(fuel_models, "fuelmodels")
-    thumbnails = roboprop_model_thumbnails + fuel_model_thumbnails
+    roboprop_models = _get_models(FILESERVER_URL + "models/")
+    thumbnails = _get_model_thumbnails(roboprop_models, "models")
     return thumbnails
 
 
@@ -129,7 +126,6 @@ def _search_and_cache(search):
 def _get_model_details(result):
     thumbnail_url = result.get("thumbnail_url", None)
     return {
-        "type": "fuel",
         "name": result["name"],
         "owner": result["owner"],
         "description": result["description"],
@@ -287,7 +283,7 @@ def add_to_my_models(request):
         name = request.POST.get("name")
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
-        url = f"{FILESERVER_URL}/fuelmodels/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+        url = f"{FILESERVER_URL}/models/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
         response = requests.post(
             url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
         )

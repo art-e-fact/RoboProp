@@ -224,6 +224,19 @@ def user_settings(request):
 
 
 def mymodels(request):
+    if request.method == "POST":
+        file = request.FILES["file"]
+        # filename = file.name.split(".")[0]
+        files = {"files": (file.name, file.read())}
+        url = f"{FILESERVER_URL}models/{file.name}"
+        response = requests.post(
+            url,
+            files=files,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            timeout=30,
+        )
+        response.raise_for_status()
+        return redirect("mymodels")
     gallery_thumbnails = _get_all_model_thumbnails()
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 

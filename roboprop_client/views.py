@@ -68,6 +68,8 @@ def _get_model_thumbnails(models, folder, gallery=True):
 
 def _get_all_model_thumbnails():
     roboprop_models = _get_models(FILESERVER_URL + "models/")
+    if not roboprop_models:
+        return []
     thumbnails = _get_model_thumbnails(roboprop_models, "models")
     return thumbnails
 
@@ -224,6 +226,22 @@ def user_settings(request):
 
 
 def mymodels(request):
+    if request.method == "POST":
+        file = request.FILES["file"]
+        files = {"files": (file.name, file.read())}
+        # Creates the folder as well as unzipping the model into it.
+        url = f"{FILESERVER_URL}models/{file.name}/?extract=true&clean=true"
+        response = requests.post(
+            url,
+            files=files,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            timeout=30,
+        )
+        if response.status_code == 201:
+            messages.success(request, "Model uploaded successfully")
+        else:
+            messages.error(request, "Failed to upload model")
+        return redirect("mymodels")
     gallery_thumbnails = _get_all_model_thumbnails()
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 

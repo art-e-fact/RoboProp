@@ -4,6 +4,7 @@
 
 {% block content %}
     <h2 class="text-2xl text-center">My Models</h2>
+    {% include "components/_message_block.html" %}
     <form class="border rounded-lg shadow-md p-3 w-1/2" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="file" name="file">

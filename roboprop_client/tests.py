@@ -2,6 +2,7 @@ from unittest.mock import patch, Mock
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from roboprop_client.views import _get_models, _get_model_thumbnails, _search_and_cache
@@ -270,6 +271,31 @@ class SearchAndCacheTestCase(TestCase):
         cache_key = "search_results_test"
         cached_result = cache.get(cache_key)
         self.assertEqual(cached_result, expected_result)
+
+
+class MyModelsUploadTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("mymodels")
+        self.file = SimpleUploadedFile("KitchenSink.zip", b"file_content")
+
+    @patch("requests.post")
+    def test_file_upload_success(self, mock_post):
+        mock_post.return_value.status_code = 201
+        response = self.client.post(self.url, {"file": self.file})
+        self.assertRedirects(response, self.url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Model uploaded successfully")
+
+    @patch("requests.post")
+    def test_file_upload_failure(self, mock_post):
+        mock_post.return_value.status_code = 400
+        response = self.client.post(self.url, {"file": self.file})
+        self.assertRedirects(response, self.url)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Failed to upload model")
 
 
 """

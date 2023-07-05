@@ -31,20 +31,23 @@ def _make_put_request(url, data):
     response.raise_for_status()
 
 
-def _get_models(url):
-    models = []
+def _get_assets(url):
+    assets = []
     response = _make_get_request(url)
+    # If the folder doesn't exist, return an empty list
+    if response.status_code == 404:
+        return assets
     data = response.json()["resource"]
     for item in data:
         if item["type"] == "folder":
-            models.append(item["name"])
-    return models
+            assets.append(item["name"])
+    return assets
 
 
-def _get_thumbnails(assets, folder, gallery=True):
+def _get_thumbnails(assets, asset_type, gallery=True):
     thumbnails = []
     for asset in assets:
-        url = f"{FILESERVER_URL}/{folder}/{asset}/thumbnails/"
+        url = f"{FILESERVER_URL}/{asset_type}/{asset}/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -62,11 +65,11 @@ def _get_thumbnails(assets, folder, gallery=True):
     return thumbnails
 
 
-def _get_all_model_thumbnails():
-    roboprop_models = _get_models(FILESERVER_URL + "models/")
-    if not roboprop_models:
+def _get_all_thumbnails(asset_type="models"):
+    assets = _get_assets(f"{FILESERVER_URL}{asset_type}/")
+    if not assets:
         return []
-    thumbnails = _get_thumbnails(roboprop_models, "models")
+    thumbnails = _get_thumbnails(assets, asset_type)
     return thumbnails
 
 
@@ -239,7 +242,7 @@ def mymodels(request):
         else:
             messages.error(request, "Failed to upload model")
         return redirect("mymodels")
-    gallery_thumbnails = _get_all_model_thumbnails()
+    gallery_thumbnails = _get_all_thumbnails("models")
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
 
@@ -311,7 +314,25 @@ def add_to_my_models(request):
 
 
 def myrobots(request):
-    return render(request, "myrobots.html")
+    if request.method == "POST":
+        file = request.FILES["file"]
+        files = {"files": (file.name, file.read())}
+        file_name = os.path.splitext(file.name)[0]
+        # Creates the folder as well as unzipping the model into it.
+        url = f"{FILESERVER_URL}robots/{file_name}/?extract=true&clean=true"
+        response = requests.post(
+            url,
+            files=files,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            timeout=30,
+        )
+        if response.status_code == 201:
+            messages.success(request, "Robot uploaded successfully")
+        else:
+            messages.error(request, "Failed to upload Robot")
+        return redirect("myrobots")
+    gallery_thumbnails = _get_all_thumbnails("robots")
+    return render(request, "myrobots.html", {"thumbnails": gallery_thumbnails})
 
 
 def myrobot_detail(request, name):

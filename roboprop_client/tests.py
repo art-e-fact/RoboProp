@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from roboprop_client.views import (
-    _get_models,
+    _get_assets,
     _get_thumbnails,
     _search_and_cache,
 )
@@ -175,7 +175,7 @@ class UserSettingsTestCase(TestCase):
 
 
 class ViewsTestCase(TestCase):
-    def test_get_models(self):
+    def test_get_assets(self):
         mock_response = Mock()
         mock_response.json.return_value = {
             "resource": [
@@ -186,10 +186,10 @@ class ViewsTestCase(TestCase):
         with patch(
             "roboprop_client.views._make_get_request", return_value=mock_response
         ):
-            models = _get_models("https://example.com/api/")
+            models = _get_assets("https://example.com/api/")
             self.assertEqual(models, ["model1"])
 
-    def test_get_roboprop_model_thumbnails(self):
+    def test_get_asset_thumbnails(self):
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {

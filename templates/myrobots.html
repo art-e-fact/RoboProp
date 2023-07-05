@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}My Models{% endblock %}
+{% block title %}My Robots{% endblock %}
 
 {% block content %}
-    <h2 class="text-2xl text-center">My Models</h2>
+    <h2 class="text-2xl text-center">My Robots</h2>
     {% include "components/_message_block.html" %}
     {% include "components/_upload_modal.html" %}
     {% include "components/_category_block.html" %}
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         {% for thumbnail in thumbnails %}
-        <a href="{% url 'mymodel_detail' name=thumbnail.name %}">
+        <a href="{% url 'myrobot_detail' folder=thumbnail.folder name=thumbnail.name %}">
             <div class="flex flex-col items-center shadow shadow-action/50">
                 <div class="mb-2">
                     <img class="h-44 w-auto max-w-full rounded-lg" src={% if thumbnail.image %}data:image/png;base64,{{ thumbnail.image }}{% else %}"/static/images/placeholder.png"{% endif %} alt="{{ thumbnail.name }}">

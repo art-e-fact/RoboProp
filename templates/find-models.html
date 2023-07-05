@@ -12,6 +12,10 @@
 
     {% if models %}
         <p class="m-3">Found {{ models|length }} models using search term: {{ search }}</p>
+        <div id="notification-container" class="flex justify-center items-center">
+            <div id="notification" class="hidden font-bold px-4 py-2 rounded-md text-white">
+            </div>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
             {% for model in models %}
                 <div class="flex flex-col items-center shadow shadow-action/50 relative">
@@ -31,13 +35,6 @@
         <p class="m-3">No models found for search term: {{ search }} </p>
     {% endif %}
     
-
-        {% comment %} <div class="mt-3">
-            {% if page > 1 %}
-                <a href="{% url 'fuel' page=page|add:"-1" %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Previous</a>
-            {% endif %}
-            <a href="{% url 'fuel' page=page|add:1 %}" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Next</a>
-        </div> {% endcomment %}
     <script>
         function addToMyModels(name, owner) {
             const data = {
@@ -45,17 +42,26 @@
                 'owner': owner,
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             };
-            console.log(owner)
+            const notification = document.querySelector('#notification');
+            notification.innerHTML = '';
+            if (!notification.classList.contains('hidden')) {
+                notification.classList.add('hidden');
+            }
             $.ajax({
                 url: '/add-to-my-models/',
                 type: 'POST',
                 data: data,
                 success: function(response) {
-                    // Handle the response data here
-                    console.log('Success:', response);
+                    notification.innerHTML = response.message;
+                    notification.classList.remove('hidden');
+                    notification.classList.remove('bg-red-500');
+                    notification.classList.add('bg-green-500');
                 },
                 error: function(error) {
-                    console.error('Error:', error);
+                    notification.innerHTML = error.responseJSON.error;
+                    notification.classList.remove('hidden');
+                    notification.classList.remove('bg-green-500');
+                    notification.classList.add('bg-red-500');
                 },
             });
         }

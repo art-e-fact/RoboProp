@@ -301,11 +301,13 @@ def add_to_my_models(request):
         response = requests.post(
             url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
         )
-        response.raise_for_status()
-        response_data = {"message": f"Success: Model: {name} added to My Models"}
-        return JsonResponse(response_data)
+        if response.status_code == 201:
+            response_data = {"message": f"Success: Model: {name} added to My Models"}
+        else:
+            response_data = {"error": f"Failed to add model: {name} to My Models"}
+        return JsonResponse(response_data, status=response.status_code)
     else:
-        return JsonResponse({"error": "Invalid request method"})
+        return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
 def myrobots(request):

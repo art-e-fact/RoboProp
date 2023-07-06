@@ -10,7 +10,7 @@ from roboprop_client.views import (
     _get_thumbnails,
     _search_and_cache,
 )
-from roboprop_client.utils import unflatten_dict, flatten_dict
+import roboprop_client.utils as utils
 
 
 class RegisterUserTestCase(TestCase):
@@ -184,7 +184,7 @@ class ViewsTestCase(TestCase):
             ]
         }
         with patch(
-            "roboprop_client.views._make_get_request", return_value=mock_response
+            "roboprop_client.utils.make_get_request", return_value=mock_response
         ):
             models = _get_assets("https://example.com/api/")
             self.assertEqual(models, ["model1"])
@@ -197,7 +197,7 @@ class ViewsTestCase(TestCase):
         }
         mock_response.content = b"example content"
         with patch(
-            "roboprop_client.views._make_get_request", return_value=mock_response
+            "roboprop_client.utils.make_get_request", return_value=mock_response
         ), patch(
             "roboprop_client.views.base64.b64encode", return_value=b"example base64"
         ):
@@ -221,7 +221,7 @@ class ViewsTestCase(TestCase):
         mock_response.status_code = 200
         mock_response.content = b"example content"
         with patch(
-            "roboprop_client.views._make_get_request", return_value=mock_response
+            "roboprop_client.utils.make_get_request", return_value=mock_response
         ):
             # Make a request to mymodel_detail
             response = self.client.get("/mymodels/MyModel/")
@@ -317,7 +317,7 @@ class UtilsTestCase(TestCase):
             "model.sdf.@version": "1.5",
             "model.sdf.#text": "model.sdf",
         }
-        nested_dict = unflatten_dict(flat_dict)
+        nested_dict = utils.unflatten_dict(flat_dict)
         self.assertEqual(
             nested_dict,
             {
@@ -337,7 +337,7 @@ class UtilsTestCase(TestCase):
                 "sdf": {"@version": "1.5", "#text": "model.sdf"},
             }
         }
-        flat_dict = flatten_dict(nested_dict)
+        flat_dict = utils.flatten_dict(nested_dict)
         self.assertEqual(
             flat_dict,
             {

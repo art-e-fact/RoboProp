@@ -11,46 +11,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from roboprop_client.utils import unflatten_dict, flatten_dict
+import roboprop_client.utils as utils
 
-FILESERVER_API_KEY = "X-DreamFactory-API-Key"
-FILESERVER_API_KEY_VALUE = os.getenv("FILESERVER_API_KEY", "")
+
 FILESERVER_URL = os.getenv("FILESERVER_URL", "")
-
-
-def _make_get_request(url):
-    return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
-
-
-def _make_put_request(url, data):
-    response = requests.put(
-        url,
-        data=data,
-        headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-    )
-    response.raise_for_status()
-
-
-def _make_post_request(url, files=None):
-    if files:
-        response = requests.post(
-            url,
-            files=files,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=30,
-        )
-    else:
-        response = requests.post(
-            url,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-        )
-
-    return response
 
 
 def _get_assets(url):
     assets = []
-    response = _make_get_request(url)
+    response = utils.make_get_request(url)
     # If the folder doesn't exist, return an empty list
     if response.status_code == 404:
         return assets
@@ -65,7 +34,7 @@ def _get_thumbnails(assets, asset_type, gallery=True):
     thumbnails = []
     for asset in assets:
         url = f"{FILESERVER_URL}/{asset_type}/{asset}/thumbnails/"
-        response = _make_get_request(url)
+        response = utils.make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
             if gallery:
@@ -73,7 +42,7 @@ def _get_thumbnails(assets, asset_type, gallery=True):
                 thumbnail_data = thumbnail_data[0:1]
             for data in thumbnail_data:
                 url = f"{FILESERVER_URL}{data['path']}?is_base64=true"
-                response = _make_get_request(url)
+                response = utils.make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
                 thumbnails.append({"name": asset, "image": thumbnail})
         else:
@@ -92,14 +61,14 @@ def _get_all_thumbnails(asset_type="models"):
 
 def _get_model_configuration(model):
     url = f"{FILESERVER_URL}/models/{model}/model.config"
-    response = _make_get_request(url)
+    response = utils.make_get_request(url)
     response.raise_for_status()
     xml_string = response.content.decode("utf-8")
     try:
         xml_dict = xmltodict.parse(xml_string)
         model_configuration = xml_dict["model"] if "model" in xml_dict else xml_dict
         # Convert to a flat dictionary using dot notation
-        model_configuration = flatten_dict(model_configuration)
+        model_configuration = utils.flatten_dict(model_configuration)
     except (TypeError, KeyError) as e:
         raise ValueError(f"Failed to parse model configuration for {model}: {e}")
     return model_configuration
@@ -114,7 +83,7 @@ def _config_as_xml(config, asset_type):
             if isinstance(value, list) and len(value) == 1:
                 config[key] = str(value[0])
 
-        config = {asset_type: unflatten_dict(config)}
+        config = {asset_type: utils.unflatten_dict(config)}
         # Yes, weird but http request doesnt seem to like it unless
         # triple quoted. the final ">" seems to get cut off otherwise.
         xml_string = f"""{xmltodict.unparse(config, pretty=True)}
@@ -248,7 +217,7 @@ def mymodels(request):
         file_name = os.path.splitext(file.name)[0]
         # Creates the folder as well as unzipping the model into it.
         url = f"{FILESERVER_URL}models/{file_name}/?extract=true&clean=true"
-        response = _make_post_request(url, files)
+        response = utils.make_post_request(url, files)
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
         else:
@@ -268,7 +237,7 @@ def mymodel_detail(request, name):
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
         url = f"{FILESERVER_URL}/models/{name}/model.config"
-        _make_put_request(url, model_config)
+        utils.make_put_request(url, model_config)
         return redirect("mymodel_detail", name=name)
 
     # GET
@@ -313,7 +282,7 @@ def add_to_my_models(request):
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
         url = f"{FILESERVER_URL}/models/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = _make_post_request(url)
+        response = utils.make_post_request(url)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:
@@ -330,7 +299,7 @@ def myrobots(request):
         file_name = os.path.splitext(file.name)[0]
         # Creates the folder as well as unzipping the model into it.
         url = f"{FILESERVER_URL}robots/{file_name}/?extract=true&clean=true"
-        response = _make_post_request(url, files)
+        response = utils.make_post_request(url, files)
         if response.status_code == 201:
             messages.success(request, "Robot uploaded successfully")
         else:

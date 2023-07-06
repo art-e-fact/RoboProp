@@ -1,7 +1,7 @@
 <form method="post" class="shadow p-2 my-4">
     {% csrf_token %}
     <div class="grid gap-2 mb-6 md:grid-cols-2" id="fields-container">
-        {% for key, value in model.configuration.items %}
+        {% for key, value in asset.configuration.items %}
             {% if key != 'description' %}
                 <div class="flex items-center mb-2" id="{{ key }}-field">
                     <div class="flex flex-col w-full">
@@ -16,7 +16,7 @@
                 <div class="col-span-2" id="description-field">
                     <label for="description" class="block text-sm font-medium text-gray-900">description</label>
                     <div class="relative flex-grow">
-                        <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ model.configuration.description }}</textarea>
+                        <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ asset.configuration.description }}</textarea>
                         <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('{{ key }}-field')">x</button>
                     </div>
                 </div>

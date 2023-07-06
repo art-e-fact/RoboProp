@@ -1,7 +1,8 @@
 <div class="grid gap-4">
-    {% if model.thumbnails|first %}
+    <h1 class="text-center text-3xl">{{ asset.name }}</h1>
+    {% if asset.thumbnails|first %}
     <div class="mx-auto">
-            <img class="h-auto max-h-72 max-w-full rounded-lg" src="data:image/png;base64,{{ model.thumbnails|first }}">
+            <img class="h-auto max-h-72 max-w-full rounded-lg" src="data:image/png;base64,{{ asset.thumbnails|first }}">
         </div>
     {% else %}
         <div class="mx-auto">
@@ -9,7 +10,7 @@
         </div>
     {% endif %}
     <div class="grid grid-cols-4 gap-4">
-        {% for thumbnail in model.thumbnails %}
+        {% for thumbnail in asset.thumbnails %}
             {% if not forloop.first %}
                 <div class="shadow flex items-center justify-center">
                     <img class="h-auto max-h-56 max-w-full rounded-lg" src="data:image/png;base64,{{ thumbnail }}">

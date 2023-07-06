@@ -31,20 +31,40 @@ def _make_put_request(url, data):
     response.raise_for_status()
 
 
-def _get_models(url):
-    models = []
+def _make_post_request(url, files=None):
+    if files:
+        response = requests.post(
+            url,
+            files=files,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            timeout=30,
+        )
+    else:
+        response = requests.post(
+            url,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+        )
+
+    return response
+
+
+def _get_assets(url):
+    assets = []
     response = _make_get_request(url)
+    # If the folder doesn't exist, return an empty list
+    if response.status_code == 404:
+        return assets
     data = response.json()["resource"]
     for item in data:
         if item["type"] == "folder":
-            models.append(item["name"])
-    return models
+            assets.append(item["name"])
+    return assets
 
 
-def _get_model_thumbnails(models, folder, gallery=True):
+def _get_thumbnails(assets, asset_type, gallery=True):
     thumbnails = []
-    for model in models:
-        url = f"{FILESERVER_URL}{folder}/{model}/thumbnails/"
+    for asset in assets:
+        url = f"{FILESERVER_URL}/{asset_type}/{asset}/thumbnails/"
         response = _make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -55,27 +75,23 @@ def _get_model_thumbnails(models, folder, gallery=True):
                 url = f"{FILESERVER_URL}{data['path']}?is_base64=true"
                 response = _make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
-                thumbnails.append(
-                    {"name": model, "image": thumbnail, "folder": folder.rstrip("/")}
-                )
+                thumbnails.append({"name": asset, "image": thumbnail})
         else:
             # Just show a placeholder.
-            thumbnails.append(
-                {"name": model, "image": None, "folder": folder.rstrip("/")}
-            )
+            thumbnails.append({"name": asset, "image": None})
     return thumbnails
 
 
-def _get_all_model_thumbnails():
-    roboprop_models = _get_models(FILESERVER_URL + "models/")
-    if not roboprop_models:
+def _get_all_thumbnails(asset_type="models"):
+    assets = _get_assets(f"{FILESERVER_URL}{asset_type}/")
+    if not assets:
         return []
-    thumbnails = _get_model_thumbnails(roboprop_models, "models")
+    thumbnails = _get_thumbnails(assets, asset_type)
     return thumbnails
 
 
-def _get_model_configuration(model, folder):
-    url = f"{FILESERVER_URL}{folder}/{model}/model.config"
+def _get_model_configuration(model):
+    url = f"{FILESERVER_URL}/models/{model}/model.config"
     response = _make_get_request(url)
     response.raise_for_status()
     xml_string = response.content.decode("utf-8")
@@ -229,24 +245,20 @@ def mymodels(request):
     if request.method == "POST":
         file = request.FILES["file"]
         files = {"files": (file.name, file.read())}
+        file_name = os.path.splitext(file.name)[0]
         # Creates the folder as well as unzipping the model into it.
-        url = f"{FILESERVER_URL}models/{file.name}/?extract=true&clean=true"
-        response = requests.post(
-            url,
-            files=files,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=30,
-        )
+        url = f"{FILESERVER_URL}models/{file_name}/?extract=true&clean=true"
+        response = _make_post_request(url, files)
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
         else:
             messages.error(request, "Failed to upload model")
         return redirect("mymodels")
-    gallery_thumbnails = _get_all_model_thumbnails()
+    gallery_thumbnails = _get_all_thumbnails("models")
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
 
-def mymodel_detail(request, folder, name):
+def mymodel_detail(request, name):
     # Using POST to save ourselves writing a bunch of JS
     # the final API call will be PUT.
     if request.method == "POST":
@@ -255,25 +267,24 @@ def mymodel_detail(request, folder, name):
         # Convert to xml before making our PUT request to update.
         model_config = _config_as_xml(model_config, "model")
         # Send an HTTP PUT request to update the model configuration
-        url = f"{FILESERVER_URL}{folder}/{name}/model.config"
+        url = f"{FILESERVER_URL}/models/{name}/model.config"
         _make_put_request(url, model_config)
-        return redirect("mymodel_detail", folder=folder, name=name)
+        return redirect("mymodel_detail", name=name)
 
     # GET
     model_details = {
         "name": name,
         "thumbnails": [],
         "configuration": {},
-        "folder": folder.rstrip("/"),
     }
 
-    thumbnails = _get_model_thumbnails([name], folder, gallery=False)
+    thumbnails = _get_thumbnails([name], "models", gallery=False)
 
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
-    model_details["configuration"] = _get_model_configuration(name, folder)
+    model_details["configuration"] = _get_model_configuration(name)
 
-    return render(request, "mymodel_detail.html", {"model": model_details})
+    return render(request, "mymodel_detail.html", {"asset": model_details})
 
 
 def find_models(request):
@@ -302,11 +313,42 @@ def add_to_my_models(request):
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
         url = f"{FILESERVER_URL}/models/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = requests.post(
-            url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
-        )
-        response.raise_for_status()
-        response_data = {"message": f"Success: Model: {name} added to My Models"}
-        return JsonResponse(response_data)
+        response = _make_post_request(url)
+        if response.status_code == 201:
+            response_data = {"message": f"Success: Model: {name} added to My Models"}
+        else:
+            response_data = {"error": f"Failed to add model: {name} to My Models"}
+        return JsonResponse(response_data, status=response.status_code)
     else:
-        return JsonResponse({"error": "Invalid request method"})
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+def myrobots(request):
+    if request.method == "POST":
+        file = request.FILES["file"]
+        files = {"files": (file.name, file.read())}
+        file_name = os.path.splitext(file.name)[0]
+        # Creates the folder as well as unzipping the model into it.
+        url = f"{FILESERVER_URL}robots/{file_name}/?extract=true&clean=true"
+        response = _make_post_request(url, files)
+        if response.status_code == 201:
+            messages.success(request, "Robot uploaded successfully")
+        else:
+            messages.error(request, "Failed to upload Robot")
+        return redirect("myrobots")
+    gallery_thumbnails = _get_all_thumbnails("robots")
+    return render(request, "myrobots.html", {"thumbnails": gallery_thumbnails})
+
+
+def myrobot_detail(request, name):
+    robot_details = {
+        "name": name,
+        "thumbnails": [],
+    }
+
+    thumbnails = _get_thumbnails([name], "robots", gallery=False)
+
+    for thumbnail in thumbnails:
+        robot_details["thumbnails"].append(thumbnail["image"])
+
+    return render(request, "myrobot_detail.html", {"asset": robot_details})

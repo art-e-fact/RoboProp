@@ -30,6 +30,7 @@ def _make_put_request(url, data):
     )
     response.raise_for_status()
 
+
 def _make_post_request(url, files=None):
     if files:
         response = requests.post(
@@ -43,8 +44,9 @@ def _make_post_request(url, files=None):
             url,
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
         )
-    
+
     return response
+
 
 def _get_assets(url):
     assets = []
@@ -282,7 +284,7 @@ def mymodel_detail(request, name):
         model_details["thumbnails"].append(thumbnail["image"])
     model_details["configuration"] = _get_model_configuration(name)
 
-    return render(request, "mymodel_detail.html", {"model": model_details})
+    return render(request, "mymodel_detail.html", {"asset": model_details})
 
 
 def find_models(request):
@@ -349,4 +351,4 @@ def myrobot_detail(request, name):
     for thumbnail in thumbnails:
         robot_details["thumbnails"].append(thumbnail["image"])
 
-    return render(request, "myrobot_detail.html", {"robot": robot_details})
+    return render(request, "myrobot_detail.html", {"asset": robot_details})

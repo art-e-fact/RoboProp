@@ -1,85 +1,20 @@
-<form method="post" class="shadow p-2 my-4">
-    {% csrf_token %}
-    <div class="grid gap-2 mb-6 md:grid-cols-2" id="fields-container">
-        {% for key, value in asset.configuration.items %}
-            {% if key != 'description' %}
-                <div class="flex items-center mb-2" id="{{ key }}-field">
-                    <div class="flex flex-col w-full">
-                        <label for="{{ key }}" class="block text-sm font-medium text-gray-900 mb-1">{{ key }}</label>
-                        <div class="relative flex-grow">
-                            <input type="text" name="{{ key }}" id="{{ key }}" value="{{ value }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
-                            <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('{{ key }}-field')">x</button>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <div class="col-span-2" id="description-field">
-                    <label for="description" class="block text-sm font-medium text-gray-900">description</label>
-                    <div class="relative flex-grow">
-                        <textarea rows="10" name="description" id="description" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ asset.configuration.description }}</textarea>
-                        <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('{{ key }}-field')">x</button>
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
-    </div>
-    <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center mt-2">Save</button>
-</form>
-<div class="grid gap-2 mb-6 md:grid-cols-1">
-    <div class="mt-1">
-        <label for="new_field_label" class="block text-sm font-medium text-gray-900">New Tag Name</label>
-        <div class="mt-1 flex">
-            <input type="text" name="new_field_label" id="new_field_label" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 flex-shrink-0" placeholder="e.g. category">
-            <button type="button" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="addField()">New Tag</button>
-        </div>
-    </div>
-    <p>
-        Creates an xml tag for you to input the value in the above form.
-        <span id="show-more" class="text-blue-500 cursor-pointer" onclick="toggleVisibility()">Show more</span>
-        <div id="hidden-text" class="hidden">
-          When nesting:<br>
-          To create a tag for a node's text value use <code>tag.#text</code>, while node properties (attributes) can be specified with <code>tag.@</code> prefixed to the property name. e.g.:
-          <ul class="mt-2">
-            <li><code>parent.child</code><em> will create a nested tag </em><code>&lt;parent&gt;&lt;child&gt;inputValueHere&lt;/child&gt;&lt;/parent&gt;</code></li>
-            <li><code>tag.@color</code><em> will create an attribute </em><code>&lt;tag color="inputValueHere"&gt;&lt;/tag&gt;</code></li>
-            <li><code>tag.#text</code><em> will allow for a text value </em><code>&lt;tag color=""&gt;inputValueHere&lt;/tag&gt;</code></li>
-          </ul>
-        </div>
-    </p>
-</div>
-<script>
-    function addField() {
-        var container = document.getElementById("fields-container");
-        var newFieldLabel = document.getElementById("new_field_label").value;
-        var newField = document.createElement("div");
-        var newFieldId = newFieldLabel + "-field";
-        newField.setAttribute("id", newFieldId);
-        newField.setAttribute("class", "flex items-center mb-2");
-        newField.innerHTML = `
-            <div class="flex flex-col w-full">
-                <label for="${newFieldLabel}" class="block text-sm font-medium text-gray-900 mb-1">${newFieldLabel}</label>
-                <div class="relative flex-grow">
-                    <input type="text" name="${newFieldLabel}" id="${newFieldLabel}" value="" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
-                    <button type="button" class="text-white bg-red-500 focus:ring-4 focus:outline-none focus:ring-blue-300 font-light rounded text-xs absolute top-0 right-0 py-0.5 px-1" onclick="deleteField('${newFieldId}')">x</button>
+<div class="grid gap-2 mb-6 md:grid-cols-2" id="fields-container">
+    {% for key, value in asset.configuration.items %}
+        {% if key != 'description' %}
+            <div class="flex items-center mb-2" id="{{ key }}-field">
+                <div class="flex flex-col w-full">
+                    <p class="block text-sm font-medium text-gray-900 mb-1">{{ key }}</p>
+                    <p class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">{{ value }}</p>
                 </div>
             </div>
-        `;
-        container.appendChild(newField);
-    }
+        {% else %}
+            <div class="col-span-2" id="description-field">
+                <p class="block text-sm font-medium text-gray-900">description</p>
+                <div class="relative flex-grow">
+                    <p class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">{{ asset.configuration.description }}</p>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
 
-    function deleteField(fieldId) {
-        var field = document.getElementById(fieldId);
-        field.remove();
-    }
-
-    function toggleVisibility() {
-        const hiddenText = document.getElementById('hidden-text');
-        const showMoreLink = document.getElementById('show-more');
-        hiddenText.classList.toggle('hidden');
-        if (hiddenText.classList.contains('hidden')) {
-          showMoreLink.textContent = 'Show more';
-        } else {
-          showMoreLink.textContent = 'Hide';
-        }
-      }
-</script>

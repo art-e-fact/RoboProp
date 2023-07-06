@@ -30,6 +30,21 @@ def _make_put_request(url, data):
     )
     response.raise_for_status()
 
+def _make_post_request(url, files=None):
+    if files:
+        response = requests.post(
+            url,
+            files=files,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            timeout=30,
+        )
+    else:
+        response = requests.post(
+            url,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+        )
+    
+    return response
 
 def _get_assets(url):
     assets = []
@@ -231,12 +246,7 @@ def mymodels(request):
         file_name = os.path.splitext(file.name)[0]
         # Creates the folder as well as unzipping the model into it.
         url = f"{FILESERVER_URL}models/{file_name}/?extract=true&clean=true"
-        response = requests.post(
-            url,
-            files=files,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=30,
-        )
+        response = _make_post_request(url, files)
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
         else:
@@ -301,9 +311,7 @@ def add_to_my_models(request):
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
         url = f"{FILESERVER_URL}/models/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = requests.post(
-            url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
-        )
+        response = _make_post_request(url)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:
@@ -320,12 +328,7 @@ def myrobots(request):
         file_name = os.path.splitext(file.name)[0]
         # Creates the folder as well as unzipping the model into it.
         url = f"{FILESERVER_URL}robots/{file_name}/?extract=true&clean=true"
-        response = requests.post(
-            url,
-            files=files,
-            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=30,
-        )
+        response = _make_post_request(url, files)
         if response.status_code == 201:
             messages.success(request, "Robot uploaded successfully")
         else:
@@ -336,4 +339,14 @@ def myrobots(request):
 
 
 def myrobot_detail(request, name):
-    return render(request, "myrobots.html")
+    robot_details = {
+        "name": name,
+        "thumbnails": [],
+    }
+
+    thumbnails = _get_thumbnails([name], "robots", gallery=False)
+
+    for thumbnail in thumbnails:
+        robot_details["thumbnails"].append(thumbnail["image"])
+
+    return render(request, "myrobot_detail.html", {"robot": robot_details})

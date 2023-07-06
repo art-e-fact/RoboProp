@@ -301,7 +301,7 @@ class MyModelsUploadTestCase(TestCase):
 
 
 """
-At present, unflatten_dict and flatten_dict are designed to be used with
+At present, flatten_dict is designed to be used with
 model.config files, i.e for metadata, where a huge amount of nesting / 
 complexity is not expected. If it comes to a point of also wanting to 
 support full on sdf models and worlds, these tests will want to be more
@@ -310,25 +310,6 @@ thorough.
 
 
 class UtilsTestCase(TestCase):
-    def test_unflatten_dict(self):
-        flat_dict = {
-            "model.name": "Cessna C-172",
-            "model.version": "1.0",
-            "model.sdf.@version": "1.5",
-            "model.sdf.#text": "model.sdf",
-        }
-        nested_dict = utils.unflatten_dict(flat_dict)
-        self.assertEqual(
-            nested_dict,
-            {
-                "model": {
-                    "name": "Cessna C-172",
-                    "version": "1.0",
-                    "sdf": {"@version": "1.5", "#text": "model.sdf"},
-                }
-            },
-        )
-
     def test_flatten_dict(self):
         nested_dict = {
             "model": {

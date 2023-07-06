@@ -1,4 +1,3 @@
-import os
 import requests
 import base64
 import xmltodict
@@ -12,9 +11,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 import roboprop_client.utils as utils
-
-
-FILESERVER_URL = os.getenv("FILESERVER_URL", "")
 
 
 def _get_assets(url):
@@ -33,7 +29,7 @@ def _get_assets(url):
 def _get_thumbnails(assets, asset_type, gallery=True):
     thumbnails = []
     for asset in assets:
-        url = f"{FILESERVER_URL}/{asset_type}/{asset}/thumbnails/"
+        url = f"{asset_type}/{asset}/thumbnails/"
         response = utils.make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -41,7 +37,7 @@ def _get_thumbnails(assets, asset_type, gallery=True):
                 # Just one thumbnail for each in mymodels.html
                 thumbnail_data = thumbnail_data[0:1]
             for data in thumbnail_data:
-                url = f"{FILESERVER_URL}{data['path']}?is_base64=true"
+                url = f"{data['path']}?is_base64=true"
                 response = utils.make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
                 thumbnails.append({"name": asset, "image": thumbnail})
@@ -52,7 +48,7 @@ def _get_thumbnails(assets, asset_type, gallery=True):
 
 
 def _get_all_thumbnails(asset_type):
-    assets = _get_assets(f"{FILESERVER_URL}{asset_type}/")
+    assets = _get_assets(f"{asset_type}/")
     if not assets:
         return []
     thumbnails = _get_thumbnails(assets, asset_type)
@@ -60,7 +56,7 @@ def _get_all_thumbnails(asset_type):
 
 
 def _get_model_configuration(model):
-    url = f"{FILESERVER_URL}/models/{model}/model.config"
+    url = f"models/{model}/model.config"
     response = utils.make_get_request(url)
     response.raise_for_status()
     xml_string = response.content.decode("utf-8")
@@ -72,25 +68,6 @@ def _get_model_configuration(model):
     except (TypeError, KeyError) as e:
         raise ValueError(f"Failed to parse model configuration for {model}: {e}")
     return model_configuration
-
-
-def _config_as_xml(config, asset_type):
-    try:
-        # xmltodict seems happy with a lists of length>1 (so that it allows for multiple
-        # tags with the same name), but seemingly not just length 1 which is what a django
-        # form gives us (querydict). So we convert any lists of length 1 to a string.
-        for key, value in config.items():
-            if isinstance(value, list) and len(value) == 1:
-                config[key] = str(value[0])
-
-        config = {asset_type: utils.unflatten_dict(config)}
-        # Yes, weird but http request doesnt seem to like it unless
-        # triple quoted. the final ">" seems to get cut off otherwise.
-        xml_string = f"""{xmltodict.unparse(config, pretty=True)}
-"""
-        return xml_string
-    except (TypeError, KeyError) as e:
-        raise ValueError(f"Failed to convert configuration to XML: {e}")
 
 
 def _search_and_cache(search):
@@ -223,19 +200,6 @@ def mymodels(request):
 
 
 def mymodel_detail(request, name):
-    # Using POST to save ourselves writing a bunch of JS
-    # the final API call will be PUT.
-    if request.method == "POST":
-        # Convert a Django QueryDict to a dictionary
-        model_config = dict(request.POST).pop("csrfmiddlewaretoken", None)
-        # Convert to xml before making our PUT request to update.
-        model_config = _config_as_xml(model_config, "model")
-        # Send an HTTP PUT request to update the model configuration
-        url = f"{FILESERVER_URL}/models/{name}/model.config"
-        utils.make_put_request(url, model_config)
-        return redirect("mymodel_detail", name=name)
-
-    # GET
     model_details = {
         "name": name,
         "thumbnails": [],
@@ -276,8 +240,9 @@ def add_to_my_models(request):
         name = request.POST.get("name")
         owner = request.POST.get("owner")
         # make a POST Request to our fileserver
-        url = f"{FILESERVER_URL}/models/{name}/?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = utils.make_post_request(url)
+        url = f"models/{name}/"
+        parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+        response = utils.make_post_request(url, parameters=parameters)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

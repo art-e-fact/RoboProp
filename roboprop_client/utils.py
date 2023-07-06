@@ -8,10 +8,12 @@ FILESERVER_URL = os.getenv("FILESERVER_URL", "")
 
 # FILESERVER REQUESTS
 def make_get_request(url):
+    url = FILESERVER_URL + url
     return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
 
 
 def make_put_request(url, data):
+    url = FILESERVER_URL + url
     response = requests.put(
         url,
         data=data,
@@ -20,8 +22,10 @@ def make_put_request(url, data):
     response.raise_for_status()
 
 
-def make_post_request(url, files=None):
+def make_post_request(url, parameters="?extract=true&clean=true", files=None):
+    url = FILESERVER_URL + url + parameters
     if files:
+        # At present all files are uploaded as a zip file.
         response = requests.post(
             url,
             files=files,
@@ -39,30 +43,11 @@ def make_post_request(url, files=None):
 
 def upload_file(file, asset_type):
     files = {"files": (file.name, file.read())}
-    file_name = os.path.splitext(file.name)[0]
+    asset_name = os.path.splitext(file.name)[0]
     # Creates the folder as well as unzipping the model into it.
-    url = f"{FILESERVER_URL}{asset_type}/{file_name}/?extract=true&clean=true"
-    response = make_post_request(url, files)
+    url = f"{asset_type}/{asset_name}/"
+    response = make_post_request(url, files=files)
     return response
-
-
-# A generic function that takes a dictionary with keys
-# that are dot-separated and converts them into nested dictionaries.
-# e.g {"a.b": 1} becomes {"a": {"b": 1}}
-def unflatten_dict(dictionary):
-    result = {}
-    for key, value in dictionary.items():
-        if "." in key:
-            parts = key.split(".")
-            sub_dict = result
-            for part in parts[:-1]:
-                if part not in sub_dict:
-                    sub_dict[part] = {}
-                sub_dict = sub_dict[part]
-            sub_dict[parts[-1]] = value
-        else:
-            result[key] = value
-    return result
 
 
 # A generic function that takes a dictionary of dictionaries

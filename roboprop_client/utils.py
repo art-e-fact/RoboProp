@@ -3,6 +3,7 @@ import os
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
 FILESERVER_API_KEY_VALUE = os.getenv("FILESERVER_API_KEY", "")
+FILESERVER_URL = os.getenv("FILESERVER_URL", "")
 
 
 # FILESERVER REQUESTS
@@ -33,6 +34,15 @@ def make_post_request(url, files=None):
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
         )
 
+    return response
+
+
+def upload_file(file, asset_type):
+    files = {"files": (file.name, file.read())}
+    file_name = os.path.splitext(file.name)[0]
+    # Creates the folder as well as unzipping the model into it.
+    url = f"{FILESERVER_URL}{asset_type}/{file_name}/?extract=true&clean=true"
+    response = make_post_request(url, files)
     return response
 
 

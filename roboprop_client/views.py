@@ -51,7 +51,7 @@ def _get_thumbnails(assets, asset_type, gallery=True):
     return thumbnails
 
 
-def _get_all_thumbnails(asset_type="models"):
+def _get_all_thumbnails(asset_type):
     assets = _get_assets(f"{FILESERVER_URL}{asset_type}/")
     if not assets:
         return []
@@ -212,12 +212,7 @@ def user_settings(request):
 
 def mymodels(request):
     if request.method == "POST":
-        file = request.FILES["file"]
-        files = {"files": (file.name, file.read())}
-        file_name = os.path.splitext(file.name)[0]
-        # Creates the folder as well as unzipping the model into it.
-        url = f"{FILESERVER_URL}models/{file_name}/?extract=true&clean=true"
-        response = utils.make_post_request(url, files)
+        response = utils.upload_file(request.FILES["file"], "models")
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
         else:
@@ -294,12 +289,7 @@ def add_to_my_models(request):
 
 def myrobots(request):
     if request.method == "POST":
-        file = request.FILES["file"]
-        files = {"files": (file.name, file.read())}
-        file_name = os.path.splitext(file.name)[0]
-        # Creates the folder as well as unzipping the model into it.
-        url = f"{FILESERVER_URL}robots/{file_name}/?extract=true&clean=true"
-        response = utils.make_post_request(url, files)
+        response = utils.upload_file(request.FILES["file"], "robots")
         if response.status_code == 201:
             messages.success(request, "Robot uploaded successfully")
         else:

@@ -1,4 +1,5 @@
 import requests
+import boto3
 import base64
 import xmltodict
 import json
@@ -95,6 +96,64 @@ def _get_model_details(result):
         "description": result["description"],
         "thumbnail": thumbnail_url,
     }
+
+
+def __remove_outliers_and_sort(items):
+    # Remove single occurences as is most likely an outlier
+    items = [item for item in items if items.count(item) > 1]
+    # Sort by most occurences
+    sorted(items, key=lambda x: items.count(x), reverse=True)
+    # Remove duplicates
+    items = list(set(items))
+    return items
+
+
+def __detect_thumbnail_details(thumbnail):
+    client = boto3.client("rekognition")
+
+    response = client.detect_labels(
+        Image={"Bytes": base64.b64decode(thumbnail)},
+        Features=["GENERAL_LABELS", "IMAGE_PROPERTIES"],
+        MinConfidence=90,
+    )
+
+    tags = []
+    categories = []
+    parent_categories = []
+    colors = []
+
+    for label in response["Labels"]:
+        tags.append(label["Name"])
+        categories.append(label["Categories"][0]["Name"])
+        if len(label["Parents"]) > 0:
+            parent_categories.append(label["Parents"][0]["Name"])
+
+        if len(label["Instances"]) > 0:
+            for dominant_color in label["Instances"][0]["DominantColors"]:
+                colors.append(dominant_color["SimplifiedColor"])
+
+    return tags, categories, parent_categories, colors
+
+
+def _get_suggested_tags(thumbnails):
+    tags = []
+    categories = []
+    parent_categories = []
+    colors = []
+
+    for thumbnail in thumbnails:
+        t, c, p, col = __detect_thumbnail_details(thumbnail)
+        tags.extend(t)
+        categories.extend(c)
+        parent_categories.extend(p)
+        colors.extend(col)
+
+    tags = __remove_outliers_and_sort(tags)
+    categories = __remove_outliers_and_sort(categories)
+    parent_categories = __remove_outliers_and_sort(parent_categories)
+    colors = __remove_outliers_and_sort(colors)
+
+    return tags, categories, parent_categories, colors
 
 
 """VIEWS"""

@@ -3,6 +3,7 @@ import boto3
 import base64
 import xmltodict
 import json
+import os
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -248,12 +249,23 @@ def user_settings(request):
 
 def mymodels(request):
     if request.method == "POST":
-        response = utils.upload_file(request.FILES["file"], "models")
+        file = request.FILES["file"]
+        response = utils.upload_file(file, "models")
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
+            model_name = os.path.splitext(file.name)[0]
+            thumbnails = _get_thumbnails([model_name], "models", gallery=False)
+            if all(thumbnail["image"] is not None for thumbnail in thumbnails):
+                base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
+                print(base64_thumbnails)
+                tags, categories, parent_categories, colors = _get_suggested_tags(
+                    base64_thumbnails
+                )
+                print(tags, categories, parent_categories, colors)
         else:
             messages.error(request, "Failed to upload model")
         return redirect("mymodels")
+
     gallery_thumbnails = _get_all_thumbnails("models")
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 

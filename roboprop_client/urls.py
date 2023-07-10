@@ -14,4 +14,5 @@ urlpatterns = [
     path("myrobots/<str:name>/", views.myrobot_detail, name="myrobot_detail"),
     path("register", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
+    path("tag-mymodel/<str:name>/", views.tag_mymodel, name="tag-mymodel"),
 ]

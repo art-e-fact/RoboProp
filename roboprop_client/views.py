@@ -257,14 +257,20 @@ def mymodels(request):
             thumbnails = _get_thumbnails([model_name], "models", gallery=False)
             if all(thumbnail["image"] is not None for thumbnail in thumbnails):
                 base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
-                print(base64_thumbnails)
                 tags, categories, parent_categories, colors = _get_suggested_tags(
                     base64_thumbnails
                 )
-                print(tags, categories, parent_categories, colors)
+                request.session["model_meta_data"] = {
+                    "name": model_name,
+                    "tags": tags,
+                    "categories": categories,
+                    "parent_categories": parent_categories,
+                    "colors": colors,
+                }
+            return redirect("tag-mymodel", name=model_name)
         else:
             messages.error(request, "Failed to upload model")
-        return redirect("mymodels")
+            return redirect("mymodels")
 
     gallery_thumbnails = _get_all_thumbnails("models")
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
@@ -347,3 +353,21 @@ def myrobot_detail(request, name):
         robot_details["thumbnails"].append(thumbnail["image"])
 
     return render(request, "myrobot_detail.html", {"asset": robot_details})
+
+
+def tag_mymodel(request, name):
+    model_meta_data = request.session.get("model_meta_data")
+    if model_meta_data:
+        meta_data = {
+            "tags": model_meta_data.get("tags"),
+            "categories": model_meta_data.get("categories"),
+            "parent_categories": model_meta_data.get("parent_categories"),
+            "colors": model_meta_data.get("colors"),
+        }
+        del request.session["model_meta_data"]
+        return render(
+            request, "tag_mymodel.html", {"name": name, "meta_data": meta_data}
+        )
+    else:
+        messages.error(request, "No metadata available")
+        return redirect("home")

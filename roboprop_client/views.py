@@ -356,6 +356,24 @@ def myrobot_detail(request, name):
 
 
 def tag_mymodel(request, name):
+    if request.method == "POST":
+        tags = request.POST.getlist("tags")
+        categories = request.POST.getlist("categories")
+        parent_categories = request.POST.getlist("parent_categories")
+        colors = request.POST.getlist("colors")
+        print(tags, categories, parent_categories, colors)
+        # # make a PUT Request to our fileserver
+        # url = f"models/{name}/"
+        # data = {
+        #     "tags": tags,
+        #     "categories": categories,
+        #     "parent_categories": parent_categories,
+        #     "colors": colors,
+        # }
+        # utils.make_put_request(url, data)
+        # messages.success(request, "Model tagged successfully")
+        # return redirect("mymodels")
+
     model_meta_data = request.session.get("model_meta_data")
     if model_meta_data:
         meta_data = {

@@ -361,7 +361,6 @@ def tag_mymodel(request, name):
         categories = request.POST.getlist("categories")
         parent_categories = request.POST.getlist("parent_categories")
         colors = request.POST.getlist("colors")
-        print(tags, categories, parent_categories, colors)
         file = "index.json"
         response = utils.make_get_request(file)
         if response.status_code == 200:
@@ -379,18 +378,20 @@ def tag_mymodel(request, name):
             "parent_categories": parent_categories,
             "colors": colors,
         }
-        # Convert the dictionary to JSON
+        # Convert the dictionary to JSON and upload
         index = json.dumps(index)
-        response = utils.make_post_request(
-            file, parameters="?clean=true", files={"index.json": index}
-        )
-        if response.status_code == 200:
+        # The PUT will actually make an index.json the first time
+        # around as well, so a POST to create is not needed.
+        response = utils.make_put_request(file, data=index)
+        if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:
             messages.error(request, "Failed to update index.json")
 
         return redirect("mymodels")
 
+    # Metadata form shown after model upload. This page should
+    # not be accessible unless the user has just uploaded a model.
     model_meta_data = request.session.get("model_meta_data")
     if model_meta_data:
         meta_data = {

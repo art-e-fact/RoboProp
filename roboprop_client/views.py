@@ -372,7 +372,7 @@ def tag_mymodel(request, name):
         else:
             messages.error(request, "Failed to fetch index.json")
             raise Exception("Failed to fetch index.json")
-        
+
         index[name] = {
             "tags": tags,
             "categories": categories,
@@ -381,12 +381,13 @@ def tag_mymodel(request, name):
         }
         # Convert the dictionary to JSON
         index = json.dumps(index)
-        response = utils.make_post_request(file, parameters="?clean=true", files={"index.json": index})
+        response = utils.make_post_request(
+            file, parameters="?clean=true", files={"index.json": index}
+        )
         if response.status_code == 200:
             messages.success(request, "Model tagged successfully")
         else:
             messages.error(request, "Failed to update index.json")
-
 
         return redirect("mymodels")
 

@@ -362,17 +362,33 @@ def tag_mymodel(request, name):
         parent_categories = request.POST.getlist("parent_categories")
         colors = request.POST.getlist("colors")
         print(tags, categories, parent_categories, colors)
-        # # make a PUT Request to our fileserver
-        # url = f"models/{name}/"
-        # data = {
-        #     "tags": tags,
-        #     "categories": categories,
-        #     "parent_categories": parent_categories,
-        #     "colors": colors,
-        # }
-        # utils.make_put_request(url, data)
-        # messages.success(request, "Model tagged successfully")
-        # return redirect("mymodels")
+        file = "index.json"
+        response = utils.make_get_request(file)
+        if response.status_code == 200:
+            # Convert the JSON response to a dictionary
+            index = json.loads(response.content)
+        elif response.status_code == 404:
+            index = {}
+        else:
+            messages.error(request, "Failed to fetch index.json")
+            raise Exception("Failed to fetch index.json")
+        
+        index[name] = {
+            "tags": tags,
+            "categories": categories,
+            "parent_categories": parent_categories,
+            "colors": colors,
+        }
+        # Convert the dictionary to JSON
+        index = json.dumps(index)
+        response = utils.make_post_request(file, parameters="?clean=true", files={"index.json": index})
+        if response.status_code == 200:
+            messages.success(request, "Model tagged successfully")
+        else:
+            messages.error(request, "Failed to update index.json")
+
+
+        return redirect("mymodels")
 
     model_meta_data = request.session.get("model_meta_data")
     if model_meta_data:

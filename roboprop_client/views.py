@@ -4,6 +4,7 @@ import base64
 import xmltodict
 import json
 import os
+import urllib.parse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -372,12 +373,13 @@ def add_metadata(request, name):
             messages.error(request, "Failed to fetch index.json")
             return redirect("mymodels")
 
+        url_safe_name = urllib.parse.quote(name)
         index[name] = {
             "tags": tags,
             "categories": categories,
             "parent_categories": parent_categories,
             "colors": colors,
-            "url": utils.FILESERVER_URL + f"models/{name}/?zip=true",
+            "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
         }
 
         # The PUT will actually make an index.json the first time

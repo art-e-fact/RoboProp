@@ -1,3 +1,4 @@
+import roboprop_client.utils as utils
 from unittest.mock import patch, Mock
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -10,7 +11,6 @@ from roboprop_client.views import (
     _get_thumbnails,
     _search_and_cache,
 )
-import roboprop_client.utils as utils
 
 
 class RegisterUserTestCase(TestCase):

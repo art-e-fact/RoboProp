@@ -370,19 +370,19 @@ def add_metadata(request, name):
             index = {}
         else:
             messages.error(request, "Failed to fetch index.json")
-            raise Exception("Failed to fetch index.json")
+            return redirect("mymodels")
 
         index[name] = {
             "tags": tags,
             "categories": categories,
             "parent_categories": parent_categories,
             "colors": colors,
+            "url": utils.FILESERVER_URL + f"models/{name}/?zip=true",
         }
-        # Convert the dictionary to JSON and upload
-        index = json.dumps(index)
+
         # The PUT will actually make an index.json the first time
         # around as well, so a POST to create is not needed.
-        response = utils.make_put_request(file, data=index)
+        response = utils.make_put_request(file, data=json.dumps(index))
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:
@@ -406,4 +406,4 @@ def add_metadata(request, name):
         )
     else:
         messages.error(request, "No metadata available")
-        return redirect("home")
+        return redirect("mymodels")

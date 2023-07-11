@@ -267,7 +267,7 @@ def mymodels(request):
                     "parent_categories": parent_categories,
                     "colors": colors,
                 }
-            return redirect("tag-mymodel", name=model_name)
+            return redirect("add_metadata", name=model_name)
         else:
             messages.error(request, "Failed to upload model")
             return redirect("mymodels")
@@ -355,7 +355,7 @@ def myrobot_detail(request, name):
     return render(request, "myrobot_detail.html", {"asset": robot_details})
 
 
-def tag_mymodel(request, name):
+def add_metadata(request, name):
     if request.method == "POST":
         tags = request.POST.getlist("tags")
         categories = request.POST.getlist("categories")
@@ -402,7 +402,7 @@ def tag_mymodel(request, name):
         }
         del request.session["model_meta_data"]
         return render(
-            request, "tag_mymodel.html", {"name": name, "meta_data": meta_data}
+            request, "add_metadata.html", {"name": name, "meta_data": meta_data}
         )
     else:
         messages.error(request, "No metadata available")

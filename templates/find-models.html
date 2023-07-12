@@ -92,11 +92,18 @@
             
         }
 
+<<<<<<< HEAD
         function addBlendKitModel(name, assetBaseId, thumbnail) {
             const data = {
                 'name': name,
                 'assetBaseId': assetBaseId,
                 'thumbnail': thumbnail,
+=======
+        function addBlendKitModel(name, assetBaseId) {
+            const data = {
+                'name': name,
+                'assetBaseId': assetBaseId,
+>>>>>>> d25d81f (seperate Fuel and Blendkit logic in html template)
                 'library': 'blendkit',
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             };

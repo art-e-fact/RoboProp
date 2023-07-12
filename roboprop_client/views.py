@@ -109,7 +109,6 @@ def _get_fuel_model_details(result):
     return {
         "name": result["name"],
         "owner": result["owner"],
-        "description": result["description"],
         "thumbnail": thumbnail_url,
     }
 

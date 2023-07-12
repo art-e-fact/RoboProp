@@ -88,7 +88,6 @@ def _search_and_cache(search):
 
     # i.e if there is no cache
     if not search_results:
-<<<<<<< HEAD
         search_results = {
             "fuel": __search_external_library(
                 f"https://fuel.gazebosim.org/1.0/models?q={search}", "fuel"
@@ -98,20 +97,21 @@ def _search_and_cache(search):
                 "blendkit",
             ),
         }
-=======
-        fuel_search_results = {}
-        blendkit_search_results = {}
-        # Search Fuel
-        fuel_url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        fuel_response = requests.get(fuel_url)
-        fuel_search_results = fuel_response.json()
-        search_results = fuel_search_results
->>>>>>> 279d664 (Seperate search into fuel and blendkit)
+
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 
     return search_results
 
+
+def _get_fuel_model_details(result):
+    thumbnail_url = result.get("thumbnail_url", None)
+    return {
+        "name": result["name"],
+        "owner": result["owner"],
+        "description": result["description"],
+        "thumbnail": thumbnail_url,
+    }
 
 def __remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier

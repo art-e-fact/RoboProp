@@ -73,6 +73,20 @@ def _get_model_configuration(model):
     return model_configuration
 
 
+def __search_fuel(search):
+    fuel_url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
+    fuel_response = requests.get(fuel_url)
+    fuel_search_results = fuel_response.json()
+    return fuel_search_results
+
+
+def __search_blendkit(search):
+    blendkit_url = f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:True&page=1"
+    blendkit_response = requests.get(blendkit_url)
+    blendkit_search_results = blendkit_response.json()
+    return blendkit_search_results
+
+
 def _search_and_cache(search):
     # Check if the results are already cached
     cache_key = f"search_results_{search}"
@@ -84,10 +98,9 @@ def _search_and_cache(search):
         fuel_search_results = {}
         blendkit_search_results = {}
         # Search Fuel
-        fuel_url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        fuel_response = requests.get(fuel_url)
-        fuel_search_results = fuel_response.json()
-        search_results["fuel"] = fuel_search_results
+        search_results["fuel"] = __search_fuel(search)
+        # Search BlendKit
+        search_results["blendkit"] = __search_blendkit(search)
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 

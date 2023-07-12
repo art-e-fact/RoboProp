@@ -22,7 +22,7 @@
                         <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}https://fuel.gazebosim.org/1.0/{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
                     </div>
                     <div class="mb-2">
-                        <p class="text-xs">{{ fuel_model.name }}</p>
+                        <p class="text-xs">{{ model.name }}</p>
                     </div>
                 </div>
             {% endfor %}

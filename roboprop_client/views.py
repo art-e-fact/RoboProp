@@ -83,7 +83,7 @@ def __search_fuel(search):
 def __search_blendkit(search):
     blendkit_url = f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:True&page=1"
     blendkit_response = requests.get(blendkit_url)
-    blendkit_search_results = blendkit_response.json()
+    blendkit_search_results = blendkit_response.json()["results"]
     return blendkit_search_results
 
 
@@ -95,8 +95,6 @@ def _search_and_cache(search):
     # i.e if there is no cache
     if not search_results:
         search_results = {}
-        fuel_search_results = {}
-        blendkit_search_results = {}
         # Search Fuel
         search_results["fuel"] = __search_fuel(search)
         # Search BlendKit
@@ -310,6 +308,7 @@ def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
     fuel_models = []
+    blendkit_models = []
 
     if search:
         search_results = _search_and_cache(search)
@@ -318,11 +317,14 @@ def find_models(request):
             fuel_model_details = _get_fuel_model_details(result)
             fuel_models.append(fuel_model_details)
 
+        for result in search_results["blendkit"]:
+            blendkit_model_details = _get_blendkit_model_details(result)
+            blendkit_models.append(blendkit_model_details)
     context = {
         "search": search,
         "fuel_models": fuel_models,
+        "blendkit_models": blendkit_models,
     }
-
     return render(request, "find-models.html", context=context)
 
 

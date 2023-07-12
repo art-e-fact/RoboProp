@@ -80,20 +80,21 @@ def _search_and_cache(search):
 
     # i.e if there is no cache
     if not search_results:
+        search_results = {}
         fuel_search_results = {}
         blendkit_search_results = {}
         # Search Fuel
         fuel_url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
         fuel_response = requests.get(fuel_url)
         fuel_search_results = fuel_response.json()
-        search_results = fuel_search_results
+        search_results["fuel"] = fuel_search_results
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 
     return search_results
 
 
-def _get_model_details(result):
+def _get_fuel_model_details(result):
     thumbnail_url = result.get("thumbnail_url", None)
     return {
         "name": result["name"],
@@ -295,18 +296,18 @@ def mymodel_detail(request, name):
 def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
-    models = []
+    fuel_models = []
 
     if search:
         search_results = _search_and_cache(search)
 
-        for result in search_results:
-            model_details = _get_model_details(result)
-            models.append(model_details)
+        for result in search_results["fuel"]:
+            fuel_model_details = _get_fuel_model_details(result)
+            fuel_models.append(fuel_model_details)
 
     context = {
         "search": search,
-        "models": models,
+        "fuel_models": fuel_models,
     }
 
     return render(request, "find-models.html", context=context)

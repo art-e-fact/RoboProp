@@ -115,6 +115,7 @@ def _get_fuel_model_details(result):
     }
 
 
+<<<<<<< HEAD
 def __remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier
     items = [item for item in items if items.count(item) > 1]
@@ -170,6 +171,14 @@ def _get_suggested_tags(thumbnails):
     colors = __remove_outliers_and_sort(colors)
 
     return tags, categories, colors
+=======
+def _get_blendkit_model_details(result):
+    return {
+        "name": result["name"],
+        "thumbnail": result["thumbnailMiddleUrl"],
+        "assetBaseId": result["assetBaseId"],
+    }
+>>>>>>> 43f2df8 (display blendkit results in browser)
 
 
 """VIEWS"""

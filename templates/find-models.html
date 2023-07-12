@@ -27,9 +27,31 @@
                 </div>
             {% endfor %}
         </div>
+    {% else %}
+        <p class="m-3">No models found for search term: {{ search }} from fuel </p>
+    {% endif %}
+    {% if blendkit_models %}
+        <p class="m-3">Found {{ blendkit_models|length }} models from Blendkit using search term: {{ search }}</p>
+        <div id="notification" class="hidden font-bold px-4 py-2 rounded-md text-white w-2/3 my-2">
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
+            {% for model in blendkit_models %}
+                <div class="flex flex-col items-center shadow shadow-action/50 relative">
+                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addToMyModels('{{ model.name }}', '{{ model.assetBaseId }}')">+</p>
+                    <div class="mb-2">
+                        <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-xs">{{ model.name }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="m-3">No models found for search term: {{ search }} from Blendkit </p>
     {% endif %}
 
-    {% if search and not fuel_models %}
+    {% if search and not fuel_models and not blendkit_models %}
         <p class="m-3">No models found for search term: {{ search }} </p>
     {% endif %}
     

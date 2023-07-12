@@ -80,10 +80,13 @@ def _search_and_cache(search):
 
     # i.e if there is no cache
     if not search_results:
-        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        response = requests.get(url)
-        # Convert the response to a dictionary
-        search_results = response.json()
+        fuel_search_results = {}
+        blendkit_search_results = {}
+        # Search Fuel
+        fuel_url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
+        fuel_response = requests.get(fuel_url)
+        fuel_search_results = fuel_response.json()
+        search_results = fuel_search_results
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 

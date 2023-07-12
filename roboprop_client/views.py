@@ -121,41 +121,38 @@ def __detect_thumbnail_details(thumbnail):
 
     tags = []
     categories = []
-    parent_categories = []
     colors = []
 
     for label in response["Labels"]:
         tags.append(label["Name"])
         categories.append(label["Categories"][0]["Name"])
         if len(label["Parents"]) > 0:
-            parent_categories.append(label["Parents"][0]["Name"])
+            # Duplicates handled by __remove_outliers_and_sort()
+            categories.append(label["Parents"][0]["Name"])
 
         if len(label["Instances"]) > 0:
             for dominant_color in label["Instances"][0]["DominantColors"]:
                 colors.append(dominant_color["SimplifiedColor"])
 
-    return tags, categories, parent_categories, colors
+    return tags, categories, colors
 
 
 def _get_suggested_tags(thumbnails):
     tags = []
     categories = []
-    parent_categories = []
     colors = []
 
     for thumbnail in thumbnails:
-        t, c, p, col = __detect_thumbnail_details(thumbnail)
+        t, c, col = __detect_thumbnail_details(thumbnail)
         tags.extend(t)
         categories.extend(c)
-        parent_categories.extend(p)
         colors.extend(col)
 
     tags = __remove_outliers_and_sort(tags)
     categories = __remove_outliers_and_sort(categories)
-    parent_categories = __remove_outliers_and_sort(parent_categories)
     colors = __remove_outliers_and_sort(colors)
 
-    return tags, categories, parent_categories, colors
+    return tags, categories, colors
 
 
 """VIEWS"""
@@ -258,14 +255,11 @@ def mymodels(request):
             thumbnails = _get_thumbnails([model_name], "models", gallery=False)
             if all(thumbnail["image"] is not None for thumbnail in thumbnails):
                 base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
-                tags, categories, parent_categories, colors = _get_suggested_tags(
-                    base64_thumbnails
-                )
+                tags, categories, colors = _get_suggested_tags(base64_thumbnails)
                 request.session["model_meta_data"] = {
                     "name": model_name,
                     "tags": tags,
                     "categories": categories,
-                    "parent_categories": parent_categories,
                     "colors": colors,
                 }
             return redirect("add_metadata", name=model_name)
@@ -360,7 +354,6 @@ def add_metadata(request, name):
     if request.method == "POST":
         tags = request.POST.getlist("tags")
         categories = request.POST.getlist("categories")
-        parent_categories = request.POST.getlist("parent_categories")
         colors = request.POST.getlist("colors")
         file = "index.json"
         response = utils.make_get_request(file)
@@ -377,7 +370,6 @@ def add_metadata(request, name):
         index[name] = {
             "tags": tags,
             "categories": categories,
-            "parent_categories": parent_categories,
             "colors": colors,
             "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
         }
@@ -399,7 +391,6 @@ def add_metadata(request, name):
         meta_data = {
             "tags": model_meta_data.get("tags"),
             "categories": model_meta_data.get("categories"),
-            "parent_categories": model_meta_data.get("parent_categories"),
             "colors": model_meta_data.get("colors"),
         }
         del request.session["model_meta_data"]

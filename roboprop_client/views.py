@@ -113,6 +113,7 @@ def _get_fuel_model_details(result):
         "thumbnail": thumbnail_url,
     }
 
+
 def __remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier
     items = [item for item in items if items.count(item) > 1]

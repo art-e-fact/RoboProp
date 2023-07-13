@@ -1,3 +1,4 @@
+import roboprop_client.utils as utils
 from unittest.mock import patch, Mock
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -10,7 +11,6 @@ from roboprop_client.views import (
     _get_thumbnails,
     _search_and_cache,
 )
-import roboprop_client.utils as utils
 
 
 class RegisterUserTestCase(TestCase):
@@ -285,7 +285,7 @@ class MyModelsUploadTestCase(TestCase):
     def test_file_upload_success(self, mock_post):
         mock_post.return_value.status_code = 201
         response = self.client.post(self.url, {"file": self.file})
-        self.assertRedirects(response, self.url)
+        self.assertRedirects(response, "/add-metadata/KitchenSink/")
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Model uploaded successfully")

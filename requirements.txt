@@ -3,3 +3,4 @@ django-compressor
 python-dotenv
 requests
 xmltodict
+boto3

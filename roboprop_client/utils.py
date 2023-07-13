@@ -19,7 +19,7 @@ def make_put_request(url, data):
         data=data,
         headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
     )
-    response.raise_for_status()
+    return response
 
 
 def make_post_request(url, parameters="?extract=true&clean=true", files=None):

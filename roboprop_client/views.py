@@ -1,7 +1,10 @@
 import requests
+import boto3
 import base64
 import xmltodict
 import json
+import os
+import urllib.parse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -97,6 +100,63 @@ def _get_model_details(result):
     }
 
 
+def __remove_outliers_and_sort(items):
+    # Remove single occurences as is most likely an outlier
+    items = [item for item in items if items.count(item) > 1]
+    # Sort by most occurences
+    sorted(items, key=lambda x: items.count(x), reverse=True)
+    # Remove duplicates
+    items = list(set(items))
+    return items
+
+
+def __detect_thumbnail_details(thumbnail):
+    client = boto3.client("rekognition")
+
+    # Confidence can be tweaked, and a lower value does return
+    # more (and sometimes correct) results, but also more noise.
+    response = client.detect_labels(
+        Image={"Bytes": base64.b64decode(thumbnail)},
+        Features=["GENERAL_LABELS", "IMAGE_PROPERTIES"],
+        MinConfidence=90,
+    )
+
+    tags = []
+    categories = []
+    colors = []
+
+    for label in response["Labels"]:
+        tags.append(label["Name"])
+        categories.append(label["Categories"][0]["Name"])
+        if len(label["Parents"]) > 0:
+            # Duplicates handled by __remove_outliers_and_sort()
+            categories.append(label["Parents"][0]["Name"])
+
+        if len(label["Instances"]) > 0:
+            for dominant_color in label["Instances"][0]["DominantColors"]:
+                colors.append(dominant_color["SimplifiedColor"])
+
+    return tags, categories, colors
+
+
+def _get_suggested_tags(thumbnails):
+    tags = []
+    categories = []
+    colors = []
+
+    for thumbnail in thumbnails:
+        t, c, col = __detect_thumbnail_details(thumbnail)
+        tags.extend(t)
+        categories.extend(c)
+        colors.extend(col)
+
+    tags = __remove_outliers_and_sort(tags)
+    categories = __remove_outliers_and_sort(categories)
+    colors = __remove_outliers_and_sort(colors)
+
+    return tags, categories, colors
+
+
 """VIEWS"""
 
 
@@ -189,12 +249,26 @@ def user_settings(request):
 
 def mymodels(request):
     if request.method == "POST":
-        response = utils.upload_file(request.FILES["file"], "models")
+        file = request.FILES["file"]
+        response = utils.upload_file(file, "models")
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
+            model_name = os.path.splitext(file.name)[0]
+            thumbnails = _get_thumbnails([model_name], "models", gallery=False)
+            if all(thumbnail["image"] is not None for thumbnail in thumbnails):
+                base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
+                tags, categories, colors = _get_suggested_tags(base64_thumbnails)
+                request.session["model_meta_data"] = {
+                    "name": model_name,
+                    "tags": tags,
+                    "categories": categories,
+                    "colors": colors,
+                }
+            return redirect("add_metadata", name=model_name)
         else:
             messages.error(request, "Failed to upload model")
-        return redirect("mymodels")
+            return redirect("mymodels")
+
     gallery_thumbnails = _get_all_thumbnails("models")
     return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
 
@@ -276,3 +350,55 @@ def myrobot_detail(request, name):
         robot_details["thumbnails"].append(thumbnail["image"])
 
     return render(request, "myrobot_detail.html", {"asset": robot_details})
+
+
+def add_metadata(request, name):
+    if request.method == "POST":
+        tags = request.POST.getlist("tags")
+        categories = request.POST.getlist("categories")
+        colors = request.POST.getlist("colors")
+        file = "index.json"
+        response = utils.make_get_request(file)
+        if response.status_code == 200:
+            # Convert the JSON response to a dictionary
+            index = json.loads(response.content)
+        elif response.status_code == 404:
+            index = {}
+        else:
+            messages.error(request, "Failed to fetch index.json")
+            return redirect("mymodels")
+
+        url_safe_name = urllib.parse.quote(name)
+        index[name] = {
+            "tags": tags,
+            "categories": categories,
+            "colors": colors,
+            "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
+        }
+
+        # The PUT will actually make an index.json the first time
+        # around as well, so a POST to create is not needed.
+        response = utils.make_put_request(file, data=json.dumps(index))
+        if response.status_code == 201:
+            messages.success(request, "Model tagged successfully")
+        else:
+            messages.error(request, "Failed to update index.json")
+
+        return redirect("mymodels")
+
+    # Metadata form shown after model upload. This page should
+    # not be accessible unless the user has just uploaded a model.
+    model_meta_data = request.session.get("model_meta_data")
+    if model_meta_data:
+        meta_data = {
+            "tags": model_meta_data.get("tags"),
+            "categories": model_meta_data.get("categories"),
+            "colors": model_meta_data.get("colors"),
+        }
+        del request.session["model_meta_data"]
+        return render(
+            request, "add_metadata.html", {"name": name, "meta_data": meta_data}
+        )
+    else:
+        messages.error(request, "No metadata available")
+        return redirect("mymodels")

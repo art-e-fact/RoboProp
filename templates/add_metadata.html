@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}MetaData for {{ name }}{% endblock %}
+
+{% block content %}
+    <h2 class="text-2xl text-center">Add MetaData for Model: {{ name }}</h2>
+    {% include "components/_message_block.html" %}
+    <p>Based on image analysis for asset: {{ name }}, find suggested Metadata tags and categories.</p>
+    <p>Check the boxes for the tags you want to add to the asset's metadata (you can also add your own).</p>
+    <form method="POST">
+        {% csrf_token %}
+        <fieldset>
+            <legend class="sr-only">Metadata for {{ name }}</legend>
+            {% for key, value in meta_data.items %}
+                <div class="form-group">
+                    <label class="txt-xl mt-3">{{ key }}:</label>
+                    <div class="form-check form-check-inline">
+                        {% for item in value %}
+                            <input class="form-check-input w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" type="checkbox" name="{{ key }}" id="{{ key }}_{{ item }}" value="{{ item }}">
+                            <label class="form-check-label mx-2 mb-2 text-sm font-medium text-gray-900" for="{{ key }}_{{ item }}">{{ item }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </fieldset>
+        <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Save</button>
+    </form>
+{% endblock %}

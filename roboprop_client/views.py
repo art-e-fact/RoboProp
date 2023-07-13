@@ -97,7 +97,6 @@ def _search_and_cache(search):
                 "blendkit",
             ),
         }
-
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 
@@ -354,12 +353,6 @@ def add_to_my_models(request):
     if request.method == "POST":
 
         name = request.POST.get("name")
-        if request.POST.get("library") == "fuel":
-            owner = request.POST.get("owner")
-            response = __add_fuel_model_to_my_models(name, owner)
-        elif request.POST.get("library") == "blendkit":
-            thumbnail = request.POST.get("thumbnail")
-            response = __add_blendkit_model_to_my_models(thumbnail)
         if request.POST.get("library") == "fuel":
             owner = request.POST.get("owner")
             response = __add_fuel_model_to_my_models(name, owner)

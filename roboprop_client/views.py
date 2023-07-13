@@ -6,6 +6,8 @@ import json
 import os
 import urllib.parse
 import subprocess
+import zipfile
+import shutil
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -208,14 +210,34 @@ def __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail):
         print(f"Error running command: {command}")
         print(f"stdout: {stdout}")
         print(f"stderr: {stderr}")
+        return response.status_code == 500
     else:
         # Handle success
         print(f"Command ran successfully: {command}")
         print(f"stdout: {stdout}")
         print(f"stderr: {stderr}")
-    parameters = f"?url={thumbnail}"
-    response = utils.make_post_request(url, parameters=parameters)
-    return response
+        zip_filename = f"{folder_name}.zip"
+        zip_path = os.path.join("models", zip_filename)
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for root, dirs, files in os.walk(os.path.join("models", folder_name)):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    zip_file.write(
+                        file_path,
+                        os.path.relpath(file_path, os.path.join("models", folder_name)),
+                    )
+        # Upload the ZIP file in a POST request
+        with open(zip_path, "rb") as zip_file:
+            files = {"files": (zip_filename, zip_file)}
+            asset_name = os.path.splitext(zip_filename)[0]
+            url = f"models/{asset_name}/"
+            response = utils.make_post_request(url, files=files)
+
+        if os.path.exists("models"):
+            shutil.rmtree("models")
+        if os.path.exists("textures"):
+            shutil.rmtree("textures")
+        return response
 
 
 """VIEWS"""

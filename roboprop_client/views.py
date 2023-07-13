@@ -102,15 +102,6 @@ def _search_and_cache(search):
     return search_results
 
 
-def _get_fuel_model_details(result):
-    thumbnail_url = result.get("thumbnail_url", None)
-    return {
-        "name": result["name"],
-        "owner": result["owner"],
-        "thumbnail": thumbnail_url,
-    }
-
-
 def __remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier
     items = [item for item in items if items.count(item) > 1]
@@ -166,11 +157,22 @@ def _get_suggested_tags(thumbnails):
     colors = __remove_outliers_and_sort(colors)
 
     return tags, categories, colors
+
+
 def _get_blendkit_model_details(result):
     return {
         "name": result["name"],
         "thumbnail": result["thumbnailMiddleUrl"],
         "assetBaseId": result["assetBaseId"],
+    }
+
+
+def _get_fuel_model_details(result):
+    thumbnail_url = result.get("thumbnail_url", None)
+    return {
+        "name": result["name"],
+        "owner": result["owner"],
+        "thumbnail": thumbnail_url,
     }
 
 

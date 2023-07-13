@@ -61,3 +61,9 @@ def flatten_dict(dictionary, parent_key="", sep="."):
         else:
             items.append((new_key, value))
     return dict(items)
+
+
+def capitalize_and_remove_spaces(string):
+    words = string.split()
+    capitalized_words = [word.capitalize() for word in words]
+    return "".join(capitalized_words)

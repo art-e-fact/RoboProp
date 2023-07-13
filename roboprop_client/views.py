@@ -5,6 +5,7 @@ import xmltodict
 import json
 import os
 import urllib.parse
+import subprocess
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -186,8 +187,32 @@ def __add_fuel_model_to_my_models(name, owner):
 
 
 # TODO: Convert blendkit model to SDF
-def __add_blendkit_model_to_my_models(thumbnail):
+def __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail):
     url = f"models/"
+    folder_name = utils.capitalize_and_remove_spaces(name)
+    command = [
+        "blenderproc",
+        "run",
+        "roboprop_client/load_blenderproc.py",
+        "--asset_base_id",
+        asset_base_id,
+        "--output_path",
+        "models",
+        "--model_name",
+        folder_name,
+    ]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        # Handle error
+        print(f"Error running command: {command}")
+        print(f"stdout: {stdout}")
+        print(f"stderr: {stderr}")
+    else:
+        # Handle success
+        print(f"Command ran successfully: {command}")
+        print(f"stdout: {stdout}")
+        print(f"stderr: {stderr}")
     parameters = f"?url={thumbnail}"
     response = utils.make_post_request(url, parameters=parameters)
     return response
@@ -358,7 +383,8 @@ def add_to_my_models(request):
             response = __add_fuel_model_to_my_models(name, owner)
         elif request.POST.get("library") == "blendkit":
             thumbnail = request.POST.get("thumbnail")
-            response = __add_blendkit_model_to_my_models(thumbnail)
+            asset_base_id = request.POST.get("assetBaseId")
+            response = __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

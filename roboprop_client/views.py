@@ -104,15 +104,6 @@ def _search_and_cache(search):
     return search_results
 
 
-def _get_fuel_model_details(result):
-    thumbnail_url = result.get("thumbnail_url", None)
-    return {
-        "name": result["name"],
-        "owner": result["owner"],
-        "thumbnail": thumbnail_url,
-    }
-
-
 def __remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier
     items = [item for item in items if items.count(item) > 1]

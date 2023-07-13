@@ -4,3 +4,4 @@ python-dotenv
 requests
 xmltodict
 boto3
+blenderproc

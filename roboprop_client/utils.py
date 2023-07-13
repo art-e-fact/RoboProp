@@ -70,3 +70,7 @@ def create_list_from_string(comma_separated_string):
         substrings = comma_separated_string.split(",")
         stripped_substrings = [substring.lstrip().rstrip() for substring in substrings]
         return stripped_substrings
+def capitalize_and_remove_spaces(string):
+    words = string.split()
+    capitalized_words = [word.capitalize() for word in words]
+    return "".join(capitalized_words)

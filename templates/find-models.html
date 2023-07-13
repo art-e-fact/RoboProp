@@ -37,7 +37,7 @@
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
             {% for model in blendkit_models %}
                 <div class="flex flex-col items-center shadow shadow-action/50 relative">
-                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addBlendKitModel('{{ model.name }}', '{{ model.assetBaseId }}')">+</p>
+                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addBlendKitModel('{{ model.name }}', '{{ model.assetBaseId }}', '{{ model.thumbnail }}')">+</p>
                     <div class="mb-2">
                         <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
                     </div>
@@ -92,10 +92,11 @@
             
         }
 
-        function addBlendKitModel(name, assetBaseId) {
+        function addBlendKitModel(name, assetBaseId, thumbnail) {
             const data = {
                 'name': name,
                 'assetBaseId': assetBaseId,
+                'thumbnail': thumbnail,
                 'library': 'blendkit',
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             };

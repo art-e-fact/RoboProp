@@ -285,6 +285,58 @@ class MyModelsUploadTestCase(TestCase):
         self.assertEqual(str(messages[0]), "Failed to upload model")
 
 
+class AddToMyModelsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    @patch("roboprop_client.views.__add_fuel_model_to_my_models")
+    def test_add_fuel_model_to_my_models(self, mock_add_fuel_model_to_my_models):
+        mock_add_fuel_model_to_my_models.return_value = Mock(status_code=201)
+        response = self.client.post(
+            "/add-to-my-models/",
+            {"name": "test_model", "library": "fuel", "owner": "test_owner"},
+        )
+        # Confirm correct arguments
+        mock_add_fuel_model_to_my_models.assert_called_once_with(
+            "test_model", "test_owner"
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json(),
+            {"message": "Success: Model: test_model added to My Models"},
+        )
+
+    @patch("roboprop_client.views.__add_blendkit_model_to_my_models")
+    def test_add_blendkit_model_to_my_models(
+        self, mock_add_blendkit_model_to_my_models
+    ):
+        mock_add_blendkit_model_to_my_models.return_value = Mock(status_code=400)
+        response = self.client.post(
+            "/add-to-my-models/",
+            {
+                "name": "test_model",
+                "library": "blendkit",
+                "assetBaseId": "test_asset_base_id",
+                "thumbnail": "test_thumbnail",
+            },
+        )
+        # Confirm correct arguments
+        mock_add_blendkit_model_to_my_models.assert_called_once_with("test_thumbnail")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {"error": "Failed to add model: test_model to My Models"},
+        )
+
+    def test_invalid_request_method(self):
+        response = self.client.get("/add-to-my-models/")
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.json(), {"error": "Invalid request method"})
+
+
 """
 At present, flatten_dict is designed to be used with
 model.config files, i.e for metadata, where a huge amount of nesting / 

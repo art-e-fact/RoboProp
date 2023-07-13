@@ -352,7 +352,7 @@ def find_models(request):
 
 def add_to_my_models(request):
     if request.method == "POST":
-<<<<<<< HEAD
+
         name = request.POST.get("name")
         if request.POST.get("library") == "fuel":
             owner = request.POST.get("owner")
@@ -360,15 +360,12 @@ def add_to_my_models(request):
         elif request.POST.get("library") == "blendkit":
             thumbnail = request.POST.get("thumbnail")
             response = __add_blendkit_model_to_my_models(thumbnail)
-=======
         if request.POST.get("library") == "fuel":
-            name = request.POST.get("name")
             owner = request.POST.get("owner")
-            response = __add_fuel_model_to_my_models(request, name, owner)
+            response = __add_fuel_model_to_my_models(name, owner)
         elif request.POST.get("library") == "blendkit":
-            # Do stuff
-            pass
->>>>>>> f6f0a39 (seperate Fuel and Blendkit upload logic)
+            thumbnail = request.POST.get("thumbnail")
+            response = __add_blendkit_model_to_my_models(thumbnail)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

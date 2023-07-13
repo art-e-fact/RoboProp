@@ -176,6 +176,14 @@ def _get_fuel_model_details(result):
     }
 
 
+def __add_fuel_model_to_my_models(request, name, owner):
+    # make a POST Request to our fileserver
+    url = f"models/{name}/"
+    parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+    response = utils.make_post_request(url, parameters=parameters)
+    return response
+
+
 """VIEWS"""
 
 
@@ -334,12 +342,13 @@ def find_models(request):
 
 def add_to_my_models(request):
     if request.method == "POST":
-        name = request.POST.get("name")
-        owner = request.POST.get("owner")
-        # make a POST Request to our fileserver
-        url = f"models/{name}/"
-        parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = utils.make_post_request(url, parameters=parameters)
+        if request.POST.get("library") == "fuel":
+            name = request.POST.get("name")
+            owner = request.POST.get("owner")
+            response = __add_fuel_model_to_my_models(request, name, owner)
+        elif request.POST.get("library") == "blendkit":
+            # Do stuff
+            pass
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

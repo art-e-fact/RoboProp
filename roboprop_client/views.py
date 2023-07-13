@@ -113,6 +113,8 @@ def __remove_outliers_and_sort(items):
 def __detect_thumbnail_details(thumbnail):
     client = boto3.client("rekognition")
 
+    # Confidence can be tweaked, and a lower value does return
+    # more (and sometimes correct) results, but also more noise.
     response = client.detect_labels(
         Image={"Bytes": base64.b64decode(thumbnail)},
         Features=["GENERAL_LABELS", "IMAGE_PROPERTIES"],

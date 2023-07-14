@@ -73,6 +73,14 @@ def _get_model_configuration(model):
     return model_configuration
 
 
+def __search_external_library(query, library):
+    response = requests.get(query)
+    search_results = (
+        response.json()["results"] if library == "blendkit" else response.json()
+    )
+    return search_results
+
+
 def _search_and_cache(search):
     # Check if the results are already cached
     cache_key = f"search_results_{search}"
@@ -80,24 +88,19 @@ def _search_and_cache(search):
 
     # i.e if there is no cache
     if not search_results:
-        url = f"https://fuel.gazebosim.org/1.0/models?q={search}"
-        response = requests.get(url)
-        # Convert the response to a dictionary
-        search_results = response.json()
+        search_results = {
+            "fuel": __search_external_library(
+                f"https://fuel.gazebosim.org/1.0/models?q={search}", "fuel"
+            ),
+            "blendkit": __search_external_library(
+                f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:True&page=1",
+                "blendkit",
+            ),
+        }
         # Cache the results for 5 minutes
         cache.set(cache_key, search_results, 300)
 
     return search_results
-
-
-def _get_model_details(result):
-    thumbnail_url = result.get("thumbnail_url", None)
-    return {
-        "name": result["name"],
-        "owner": result["owner"],
-        "description": result["description"],
-        "thumbnail": thumbnail_url,
-    }
 
 
 def __remove_outliers_and_sort(items):
@@ -155,6 +158,39 @@ def _get_suggested_tags(thumbnails):
     colors = __remove_outliers_and_sort(colors)
 
     return tags, categories, colors
+
+
+def _get_blendkit_model_details(result):
+    return {
+        "name": result["name"],
+        "thumbnail": result["thumbnailMiddleUrl"],
+        "assetBaseId": result["assetBaseId"],
+    }
+
+
+def _get_fuel_model_details(result):
+    thumbnail_url = result.get("thumbnail_url", None)
+    return {
+        "name": result["name"],
+        "owner": result["owner"],
+        "thumbnail": thumbnail_url,
+    }
+
+
+def __add_fuel_model_to_my_models(name, owner):
+    # make a POST Request to our fileserver
+    url = f"models/{name}/"
+    parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
+    response = utils.make_post_request(url, parameters=parameters)
+    return response
+
+
+# TODO: Convert blendkit model to SDF
+def __add_blendkit_model_to_my_models(thumbnail):
+    url = f"models/"
+    parameters = f"?url={thumbnail}"
+    response = utils.make_post_request(url, parameters=parameters)
+    return response
 
 
 """VIEWS"""
@@ -292,31 +328,36 @@ def mymodel_detail(request, name):
 def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
-    models = []
+    fuel_models = []
+    blendkit_models = []
 
     if search:
         search_results = _search_and_cache(search)
 
-        for result in search_results:
-            model_details = _get_model_details(result)
-            models.append(model_details)
+        for result in search_results["fuel"]:
+            fuel_model_details = _get_fuel_model_details(result)
+            fuel_models.append(fuel_model_details)
 
+        for result in search_results["blendkit"]:
+            blendkit_model_details = _get_blendkit_model_details(result)
+            blendkit_models.append(blendkit_model_details)
     context = {
         "search": search,
-        "models": models,
+        "fuel_models": fuel_models,
+        "blendkit_models": blendkit_models,
     }
-
     return render(request, "find-models.html", context=context)
 
 
 def add_to_my_models(request):
     if request.method == "POST":
         name = request.POST.get("name")
-        owner = request.POST.get("owner")
-        # make a POST Request to our fileserver
-        url = f"models/{name}/"
-        parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
-        response = utils.make_post_request(url, parameters=parameters)
+        if request.POST.get("library") == "fuel":
+            owner = request.POST.get("owner")
+            response = __add_fuel_model_to_my_models(name, owner)
+        elif request.POST.get("library") == "blendkit":
+            thumbnail = request.POST.get("thumbnail")
+            response = __add_blendkit_model_to_my_models(thumbnail)
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

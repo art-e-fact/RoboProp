@@ -10,14 +10,14 @@
         </form>
     </div>
 
-    {% if models %}
-        <p class="m-3">Found {{ models|length }} models using search term: {{ search }}</p>
+    {% if fuel_models %}
+        <p class="m-3">Found {{ fuel_models|length }} models from fuel using search term: {{ search }}</p>
         <div id="notification" class="hidden font-bold px-4 py-2 rounded-md text-white w-2/3 my-2">
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
-            {% for model in models %}
+            {% for model in fuel_models %}
                 <div class="flex flex-col items-center shadow shadow-action/50 relative">
-                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addToMyModels('{{ model.name }}', '{{ model.owner }}')">+</p>
+                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addFuelModel('{{ model.name }}', '{{ model.owner }}')">+</p>
                     <div class="mb-2">
                         <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}https://fuel.gazebosim.org/1.0/{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
                     </div>
@@ -27,19 +27,36 @@
                 </div>
             {% endfor %}
         </div>
+    {% else %}
+        <p class="m-3">No models found for search term: {{ search }} from fuel </p>
+    {% endif %}
+    {% if blendkit_models %}
+        <p class="m-3">Found {{ blendkit_models|length }} models from Blendkit using search term: {{ search }}</p>
+        <div id="notification" class="hidden font-bold px-4 py-2 rounded-md text-white w-2/3 my-2">
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="fuel-gallery">
+            {% for model in blendkit_models %}
+                <div class="flex flex-col items-center shadow shadow-action/50 relative">
+                    <p class="cursor-pointer absolute top-0 right-0 bg-white shadow-md px-2 py-1 m-1 bg-action/80" onClick="addBlendKitModel('{{ model.name }}', '{{ model.assetBaseId }}', '{{ model.thumbnail }}')">+</p>
+                    <div class="mb-2">
+                        <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-xs">{{ model.name }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="m-3">No models found for search term: {{ search }} from Blendkit </p>
     {% endif %}
 
-    {% if search and not models %}
+    {% if search and not fuel_models and not blendkit_models %}
         <p class="m-3">No models found for search term: {{ search }} </p>
     {% endif %}
     
     <script>
-        function addToMyModels(name, owner) {
-            const data = {
-                'name': name,
-                'owner': owner,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            };
+        function addModel(data) {
             const notification = document.querySelector('#notification');
             notification.innerHTML = '';
             if (!notification.classList.contains('hidden')) {
@@ -62,6 +79,28 @@
                     notification.classList.add('bg-red-500/80');
                 },
             });
+        }
+
+        function addFuelModel(name, owner) {
+            const data = {
+                'name': name,
+                'owner': owner,
+                'library': 'fuel',
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            };
+            addModel(data);
+            
+        }
+
+        function addBlendKitModel(name, assetBaseId, thumbnail) {
+            const data = {
+                'name': name,
+                'assetBaseId': assetBaseId,
+                'thumbnail': thumbnail,
+                'library': 'blendkit',
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            };
+            addModel(data);
         }
     </script>
 {% endblock %}

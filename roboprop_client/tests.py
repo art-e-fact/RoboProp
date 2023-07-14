@@ -232,47 +232,32 @@ class ViewsTestCase(TestCase):
 
 
 class SearchAndCacheTestCase(TestCase):
-    @patch("roboprop_client.views.requests.get")
-    def test_search_and_cache_with_cache_hit(self, mock_get):
-        # Set up the cache
-        cache_key = "search_results_test"
-        search_results = [{"name": "test_model"}]
-        cache.set(cache_key, search_results)
+    @patch("roboprop_client.views.__search_external_library")
+    def test_search_and_cache(self, mock_search_external_library):
+        # Set up the mock
+        mock_search_external_library.return_value = {"result": "mocked"}
 
-        # Call the function
-        result = _search_and_cache("test")
+        # Call the function with a search term
+        search_results = _search_and_cache("test")
 
-        # Check the result
-        self.assertEqual(result, search_results)
-
-        # Check that requests.get() was not called
-        mock_get.assert_not_called()
-
-        # Clean up the cache
-        cache.delete(cache_key)
-
-    @patch("roboprop_client.views.requests.get")
-    def test_search_and_cache_with_cache_miss(self, mock_get):
-        # Set up the mock response
-        mock_response = Mock()
-        mock_response.json.return_value = [{"name": "test_model"}]
-        mock_get.return_value = mock_response
-
-        # Call the function
-        result = _search_and_cache("test")
-
-        # Check the result
-        expected_result = [{"name": "test_model"}]
-        self.assertEqual(result, expected_result)
-
-        # Check that requests.get() was called with the correct URL
-        expected_url = "https://fuel.gazebosim.org/1.0/models?q=test"
-        mock_get.assert_called_once_with(expected_url)
+        # Check that the mocks were called with the expected URLs
+        mock_search_external_library.assert_any_call(
+            "https://fuel.gazebosim.org/1.0/models?q=test", "fuel"
+        )
+        mock_search_external_library.assert_any_call(
+            "https://www.blenderkit.com/api/v1/search/?query=search+text:test+asset_type:model+order:_score+is_free:True&page=1",
+            "blendkit",
+        )
 
         # Check that the search results were cached
         cache_key = "search_results_test"
-        cached_result = cache.get(cache_key)
-        self.assertEqual(cached_result, expected_result)
+        cached_results = cache.get(cache_key)
+        self.assertIsNotNone(cached_results)
+        self.assertEqual(cached_results["fuel"], {"result": "mocked"})
+        self.assertEqual(cached_results["blendkit"], {"result": "mocked"})
+
+        # Check that the function returned the cached results
+        self.assertEqual(search_results, cached_results)
 
 
 class MyModelsUploadTestCase(TestCase):
@@ -298,6 +283,58 @@ class MyModelsUploadTestCase(TestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Failed to upload model")
+
+
+class AddToMyModelsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    @patch("roboprop_client.views.__add_fuel_model_to_my_models")
+    def test_add_fuel_model_to_my_models(self, mock_add_fuel_model_to_my_models):
+        mock_add_fuel_model_to_my_models.return_value = Mock(status_code=201)
+        response = self.client.post(
+            "/add-to-my-models/",
+            {"name": "test_model", "library": "fuel", "owner": "test_owner"},
+        )
+        # Confirm correct arguments
+        mock_add_fuel_model_to_my_models.assert_called_once_with(
+            "test_model", "test_owner"
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json(),
+            {"message": "Success: Model: test_model added to My Models"},
+        )
+
+    @patch("roboprop_client.views.__add_blendkit_model_to_my_models")
+    def test_add_blendkit_model_to_my_models(
+        self, mock_add_blendkit_model_to_my_models
+    ):
+        mock_add_blendkit_model_to_my_models.return_value = Mock(status_code=400)
+        response = self.client.post(
+            "/add-to-my-models/",
+            {
+                "name": "test_model",
+                "library": "blendkit",
+                "assetBaseId": "test_asset_base_id",
+                "thumbnail": "test_thumbnail",
+            },
+        )
+        # Confirm correct arguments
+        mock_add_blendkit_model_to_my_models.assert_called_once_with("test_thumbnail")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {"error": "Failed to add model: test_model to My Models"},
+        )
+
+    def test_invalid_request_method(self):
+        response = self.client.get("/add-to-my-models/")
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.json(), {"error": "Invalid request method"})
 
 
 """

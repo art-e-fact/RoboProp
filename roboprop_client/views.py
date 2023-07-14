@@ -170,16 +170,12 @@ def _get_blendkit_metadata(folder_name):
     url = f"models/{folder_name}/blenderkit_meta.json"
     response = utils.make_get_request(url)
     if response.status_code == 200:
-        print("good 1")
         metadata = response.json()
         tags = metadata.get("tags", [])
-        print("good 2")
         # Blendkit has only one category per model, but this
         # is a list for consistency
         categories = [metadata.get("category", "").strip()]
-        print("good 3")
         description = metadata.get("description", "")
-        print("good 4")
     return tags, categories, description
 
 
@@ -272,6 +268,19 @@ def _check_and_get_index(request):
         return redirect("mymodels")
     return index
 
+def _add_blendkit_model_metadata(request, name, folder_name):
+    tags, categories, description = _get_blendkit_metadata(folder_name)
+    index = _check_and_get_index(request)
+    url_safe_name = urllib.parse.quote(name)
+
+    index[folder_name] = {
+        "tags": tags,
+        "categories": categories,
+        "description": description,
+        "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
+    }
+    response = utils.make_put_request("index.json", data=json.dumps(index))
+    return response
 
 """VIEWS"""
 
@@ -445,17 +454,7 @@ def add_to_my_models(request):
             )
         # Go to suggested tags
         if response.status_code == 201 and library == "blendkit":
-            tags, categories, description = _get_blendkit_metadata(folder_name)
-            index = _check_and_get_index(request)
-            url_safe_name = urllib.parse.quote(name)
-
-            index[folder_name] = {
-                "tags": tags,
-                "categories": categories,
-                "description": description,
-                "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
-            }
-            response = utils.make_put_request("index.json", data=json.dumps(index))
+            response = _add_blendkit_model_metadata(request, name, folder_name)
             if response.status_code == 201:
                 response_data = {
                     "message": f"Success: Model: {name} added to My Models, and succesfully tagged"
@@ -466,6 +465,7 @@ def add_to_my_models(request):
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:
             response_data = {"error": f"Failed to add model: {name} to My Models"}
+
         return JsonResponse(response_data, status=response.status_code)
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)

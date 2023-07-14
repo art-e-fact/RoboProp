@@ -398,7 +398,6 @@ def find_models(request):
 
 def add_to_my_models(request):
     if request.method == "POST":
-
         name = request.POST.get("name")
         if request.POST.get("library") == "fuel":
             owner = request.POST.get("owner")
@@ -407,6 +406,7 @@ def add_to_my_models(request):
             thumbnail = request.POST.get("thumbnail")
             asset_base_id = request.POST.get("assetBaseId")
             response = __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail)
+
         if response.status_code == 201:
             response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:

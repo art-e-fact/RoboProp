@@ -325,7 +325,7 @@ class AddToMyModelsTestCase(TestCase):
         )
         # Confirm correct arguments
         mock_add_blendkit_model_to_my_models.assert_called_once_with(
-            "test_model", "test_asset_base_id", "test_thumbnail"
+            "Test_model", "test_asset_base_id", "test_thumbnail"
         )
 
         self.assertEqual(response.status_code, 400)

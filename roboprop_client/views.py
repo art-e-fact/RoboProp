@@ -188,7 +188,19 @@ def __add_fuel_model_to_my_models(name, owner):
     return response
 
 
-# TODO: Convert blendkit model to SDF
+def __add_blendkit_thumbnail(thumbnail, folder_name):
+    thumbnail_response = requests.get(thumbnail)
+    os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
+    thumbnail_filename = os.path.basename(thumbnail)
+    thumbnail_extension = os.path.splitext(thumbnail_filename)[1]
+    new_thumbnail_filename = "01" + thumbnail_extension
+    thumbnail_path = os.path.join(
+        "models", folder_name, "thumbnails", new_thumbnail_filename
+    )
+    with open(thumbnail_path, "wb") as thumbnail_file:
+        thumbnail_file.write(thumbnail_response.content)
+
+
 def __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail):
     url = f"models/"
     folder_name = utils.capitalize_and_remove_spaces(name)
@@ -216,16 +228,9 @@ def __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail):
         print(f"Command ran successfully: {command}")
         print(f"stdout: {stdout}")
         print(f"stderr: {stderr}")
-        zip_filename = f"{folder_name}.zip"
-        zip_path = os.path.join("models", zip_filename)
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for root, dirs, files in os.walk(os.path.join("models", folder_name)):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    zip_file.write(
-                        file_path,
-                        os.path.relpath(file_path, os.path.join("models", folder_name)),
-                    )
+
+        __add_blendkit_thumbnail(thumbnail, folder_name)
+        zip_filename, zip_path = utils.create_zip_file(folder_name)
         # Upload the ZIP file in a POST request
         with open(zip_path, "rb") as zip_file:
             files = {"files": (zip_filename, zip_file)}
@@ -233,10 +238,7 @@ def __add_blendkit_model_to_my_models(name, asset_base_id, thumbnail):
             url = f"models/{asset_name}/"
             response = utils.make_post_request(url, files=files)
 
-        if os.path.exists("models"):
-            shutil.rmtree("models")
-        if os.path.exists("textures"):
-            shutil.rmtree("textures")
+        utils.delete_folders(["models", "textures"])
         return response
 
 

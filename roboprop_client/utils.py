@@ -1,5 +1,7 @@
 import requests
 import os
+import shutil
+import zipfile
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
 FILESERVER_API_KEY_VALUE = os.getenv("FILESERVER_API_KEY", "")
@@ -74,3 +76,24 @@ def capitalize_and_remove_spaces(string):
     words = string.split()
     capitalized_words = [word.capitalize() for word in words]
     return "".join(capitalized_words)
+
+
+def create_zip_file(folder_name):
+    zip_filename = f"{folder_name}.zip"
+    zip_path = os.path.join("models", zip_filename)
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in os.walk(os.path.join("models", folder_name)):
+            for file in files:
+                file_path = os.path.join(root, file)
+                zip_file.write(
+                    file_path,
+                    os.path.relpath(file_path, os.path.join("models", folder_name)),
+                )
+
+    return zip_filename, zip_path
+
+
+def delete_folders(folders):
+    for folder in folders:
+        if os.path.exists(folder):
+            shutil.rmtree(folder)

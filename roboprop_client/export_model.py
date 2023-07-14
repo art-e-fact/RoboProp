@@ -4,10 +4,12 @@ from xml.dom import minidom
 from xml.etree import ElementTree
 from pathlib import Path
 
+VISUAL_EXTENSION = ".glb"
+COLLISION_EXTENSION = ".stl"
 
 def export_sdf(path_model: Path, model_name: str):
-    path_collision = os.path.join(path_model, "assets/collision.obj")
-    path_visual = os.path.join(path_model, "assets/visual.obj")
+    path_collision = os.path.join(path_model, f"assets/collision{COLLISION_EXTENSION}")
+    path_visual = os.path.join(path_model, f"assets/visual{VISUAL_EXTENSION}")
     path_sdf = os.path.join(path_model, "model.sdf")
     path_config = os.path.join(path_model, "model.config")
     sdf_version = "1.9"
@@ -75,18 +77,31 @@ def export_sdf(path_model: Path, model_name: str):
     def export_model(filepath: str, with_materials: bool):
         os.makedirs(name=os.path.dirname(filepath), exist_ok=True)
         bpy.ops.object.select_all(action="SELECT")
-        bpy.ops.export_scene.obj(
-            filepath=filepath,
-            check_existing=False,
-            # Use ROS coordinate frame
-            axis_forward="Y",
-            axis_up="Z",
-            use_selection=True,
-            use_materials=with_materials,
-            use_triangles=True,
-            # copy all the texture images next to the model
-            path_mode="COPY",
-        )
+        if Path(filepath).suffix == ".obj":
+            bpy.ops.export_scene.obj(
+                filepath=filepath,
+                check_existing=False,
+                # Use ROS coordinate frame
+                axis_forward="Y",
+                axis_up="Z",
+                use_selection=True,
+                use_materials=with_materials,
+                use_triangles=True,
+                # copy all the texture images next to the model
+                path_mode="COPY",
+            )
+        elif Path(filepath).suffix == ".glb":
+            bpy.ops.export_scene.gltf(
+                filepath=filepath,
+                check_existing=False,
+                use_selection=True,
+                export_materials="EXPORT" if with_materials else "NONE",
+                export_format='GLB',
+                export_image_format='AUTO',
+            )
+        else:
+            raise ValueError(f"Exporting models the with extension '{Path(filepath).suffix}' is not implemented yet. (Appears in {filepath})")
+        
         print(f"Saved {filepath}")
 
     # Export mesh

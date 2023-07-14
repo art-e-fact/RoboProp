@@ -170,7 +170,16 @@ def _get_blendkit_metadata(folder_name):
     url = f"models/{folder_name}/blenderkit_meta.json"
     response = utils.make_get_request(url)
     if response.status_code == 200:
+        print("good 1")
         metadata = response.json()
+        tags = metadata.get("tags", [])
+        print("good 2")
+        # Blendkit has only one category per model, but this
+        # is a list for consistency
+        categories = [metadata.get("category", "").strip()]
+        print("good 3")
+        description = metadata.get("description", "")
+        print("good 4")
     return tags, categories, description
 
 
@@ -446,13 +455,15 @@ def add_to_my_models(request):
                 "description": description,
                 "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
             }
-            response = utils.make_put_request(index.json, data=json.dumps(index))
+            response = utils.make_put_request("index.json", data=json.dumps(index))
             if response.status_code == 201:
                 response_data = {
                     "message": f"Success: Model: {name} added to My Models, and succesfully tagged"
                 }
             else:
                 response_data = {"error": f"Model: {name} uploaded, but failed to tag"}
+        elif response.status_code == 201 and library == "fuel":
+            response_data = {"message": f"Success: Model: {name} added to My Models"}
         else:
             response_data = {"error": f"Failed to add model: {name} to My Models"}
         return JsonResponse(response_data, status=response.status_code)
@@ -528,7 +539,7 @@ def add_metadata(request, name):
 
         # The PUT will actually make an index.json the first time
         # around as well, so a POST to create is not needed.
-        response = utils.make_put_request(index.json, data=json.dumps(index))
+        response = utils.make_put_request("index.json", data=json.dumps(index))
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:

@@ -270,7 +270,9 @@ class MyModelsUploadTestCase(TestCase):
     def test_file_upload_success(self, mock_post):
         mock_post.return_value.status_code = 201
         response = self.client.post(self.url, {"file": self.file})
-        self.assertRedirects(response, "/add-metadata/KitchenSink/")
+        self.assertRedirects(
+            response, "/add-metadata/KitchenSink/", target_status_code=302
+        )
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Model uploaded successfully")
@@ -365,3 +367,16 @@ class UtilsTestCase(TestCase):
                 "model.sdf.#text": "model.sdf",
             },
         )
+
+    def test_create_list_from_string(self):
+        # Test with non-empty string
+        assert utils.create_list_from_string("  apple,  banana,  cherry pie ") == [
+            "apple",
+            "banana",
+            "cherry pie",
+        ]
+        assert utils.create_list_from_string("dog,cat") == ["dog", "cat"]
+        assert utils.create_list_from_string("one,two,three") == ["one", "two", "three"]
+
+        # Test with empty string
+        assert utils.create_list_from_string("") == []

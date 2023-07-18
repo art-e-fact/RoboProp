@@ -61,3 +61,12 @@ def flatten_dict(dictionary, parent_key="", sep="."):
         else:
             items.append((new_key, value))
     return dict(items)
+
+
+def create_list_from_string(comma_separated_string):
+    if not comma_separated_string:
+        return []
+    else:
+        substrings = comma_separated_string.split(",")
+        stripped_substrings = [substring.lstrip().rstrip() for substring in substrings]
+        return stripped_substrings

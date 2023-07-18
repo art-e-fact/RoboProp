@@ -365,3 +365,16 @@ class UtilsTestCase(TestCase):
                 "model.sdf.#text": "model.sdf",
             },
         )
+
+    def test_create_list_from_string(self):
+        # Test with non-empty string
+        assert utils.create_list_from_string("  apple,  banana,  cherry pie ") == [
+            "apple",
+            "banana",
+            "cherry pie",
+        ]
+        assert utils.create_list_from_string("dog,cat") == ["dog", "cat"]
+        assert utils.create_list_from_string("one,two,three") == ["one", "two", "three"]
+
+        # Test with empty string
+        assert utils.create_list_from_string("") == []

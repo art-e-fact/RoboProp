@@ -396,8 +396,13 @@ def myrobot_detail(request, name):
 def add_metadata(request, name):
     if request.method == "POST":
         tags = request.POST.getlist("tags")
+        tags.extend(utils.create_list_from_string(request.POST.get("custom-tags")))
         categories = request.POST.getlist("categories")
+        categories.extend(
+            utils.create_list_from_string(request.POST.get("custom-categories"))
+        )
         colors = request.POST.getlist("colors")
+        colors.extend(utils.create_list_from_string(request.POST.get("custom-colors")))
         file = "index.json"
         response = utils.make_get_request(file)
         if response.status_code == 200:

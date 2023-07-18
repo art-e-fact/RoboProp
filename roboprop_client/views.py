@@ -395,9 +395,24 @@ def myrobot_detail(request, name):
 
 def add_metadata(request, name):
     if request.method == "POST":
+        # Tags etc. that the user has selected based on
+        # Rekognition suggestions
         tags = request.POST.getlist("tags")
         categories = request.POST.getlist("categories")
         colors = request.POST.getlist("colors")
+
+        custom_field_index = {
+            "custom-tags": tags,
+            "custom-categories": categories,
+            "custom-colors": colors,
+        }
+        # Tags etc. that the user has entered manually
+        for custom_field, lst in custom_field_index.items():
+            if request.POST.get(custom_field):
+                lst.extend(
+                    utils.create_list_from_string(request.POST.get(custom_field))
+                )
+
         file = "index.json"
         response = utils.make_get_request(file)
         if response.status_code == 200:

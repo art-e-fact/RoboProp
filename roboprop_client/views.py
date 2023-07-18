@@ -395,6 +395,8 @@ def myrobot_detail(request, name):
 
 def add_metadata(request, name):
     if request.method == "POST":
+        # Gets tags etc. that the user selectes from options, as well as
+        # custom tags etc. that the user has entered via text box.
         tags = request.POST.getlist("tags")
         tags.extend(utils.create_list_from_string(request.POST.get("custom-tags")))
         categories = request.POST.getlist("categories")

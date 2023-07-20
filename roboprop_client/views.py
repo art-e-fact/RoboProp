@@ -183,6 +183,7 @@ def _get_blendkit_model_details(result):
     return {
         "name": result["name"],
         "thumbnail": result["thumbnailMiddleUrl"],
+        "description": result["description"],
         "assetBaseId": result["assetBaseId"],
     }
 
@@ -192,6 +193,7 @@ def _get_fuel_model_details(result):
     return {
         "name": result["name"],
         "owner": result["owner"],
+        "description": result["description"],
         "thumbnail": thumbnail_url,
     }
 

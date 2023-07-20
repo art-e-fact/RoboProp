@@ -7,6 +7,7 @@ from pathlib import Path
 VISUAL_EXTENSION = ".glb"
 COLLISION_EXTENSION = ".stl"
 
+
 def export_sdf(path_model: Path, model_name: str):
     path_collision = os.path.join(path_model, f"assets/collision{COLLISION_EXTENSION}")
     path_visual = os.path.join(path_model, f"assets/visual{VISUAL_EXTENSION}")
@@ -96,12 +97,14 @@ def export_sdf(path_model: Path, model_name: str):
                 check_existing=False,
                 use_selection=True,
                 export_materials="EXPORT" if with_materials else "NONE",
-                export_format='GLB',
-                export_image_format='AUTO',
+                export_format="GLB",
+                export_image_format="AUTO",
             )
         else:
-            raise ValueError(f"Exporting models the with extension '{Path(filepath).suffix}' is not implemented yet. (Appears in {filepath})")
-        
+            raise ValueError(
+                f"Exporting models the with extension '{Path(filepath).suffix}' is not implemented yet. (Appears in {filepath})"
+            )
+
         print(f"Saved {filepath}")
 
     # Export mesh

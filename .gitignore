@@ -90,3 +90,6 @@ sftp-config.json
 node_modules/
 static/CACHE/
 static/src/output.css
+
+models/
+textures/

@@ -32,7 +32,7 @@ def make_post_request(url, parameters="?extract=true&clean=true", files=None):
             url,
             files=files,
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=30,
+            timeout=60,
         )
     else:
         response = requests.post(

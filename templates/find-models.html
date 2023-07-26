@@ -21,8 +21,9 @@
                     <div class="mb-2">
                         <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}https://fuel.gazebosim.org/1.0/{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
                     </div>
-                    <div class="mb-2">
-                        <p class="text-xs">{{ model.name }}</p>
+                    <div class="mb-2 max-w-full">
+                        <p class="text-xs text-center font-bold break-words">{{ model.name }}</p>
+                        <p class="text-xs text-center break-words">{{ model.description|default:"No description" }}</p>
                     </div>
                 </div>
             {% endfor %}
@@ -41,8 +42,9 @@
                     <div class="mb-2">
                         <img class="h-44 w-auto max-w-full rounded-lg" src="{% if model.thumbnail %}{{ model.thumbnail }}{% else %}/static/images/placeholder.png{% endif %}">
                     </div>
-                    <div class="mb-2">
-                        <p class="text-xs">{{ model.name }}</p>
+                    <div class="mb-2 max-w-full">
+                        <p class="text-xs text-center font-bold break-words">{{ model.name }}</p>
+                        <p class="text-xs text-center break-words">{{ model.description|default:"No description" }}</p>
                     </div>
                 </div>
             {% endfor %}

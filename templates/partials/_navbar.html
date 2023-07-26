@@ -11,6 +11,9 @@
                 <a href="/" class="flex ml-2 md:mr-24">
                     <img src="/static/images/artefacts_400.png" class="h-8 mr-3" alt="Artefacts Logo" />
                     <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap">RoboProp</span>
+                    <span id="loader-spinner" style="display: none;">
+                        {% include "components/_loading_spinner.html" %}
+                    </span>
                 </a>
             </div>
         </div>
@@ -43,3 +46,17 @@
         </ul>
     </div>
 </aside>
+
+<script>
+    function loadWithSpinner(event) {
+      event.preventDefault();
+      const link = event.currentTarget;
+      const spinnerContainer = document.getElementById('loader-spinner');
+      // Show the spinner
+      spinnerContainer.style.display = 'block';
+      // Load the link after a short delay to allow the spinner to show
+      setTimeout(() => {
+        window.location.href = link.href;
+      }, 500);
+    }
+</script>

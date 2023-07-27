@@ -38,7 +38,7 @@ Models added from Fuel will extract in the regular "fuel" manner and so can be c
 
 ### Blendkit Models
 
-Blendkit models upon selection are converted to sdf format before being uploaded to the fileserver, and (at present) two mesh objects are provided, `.obj` (for Gazebo) and `.glb` (for Kesko). As a result, there will be two `sdf` files (and two `config` files) created. Make sure to call the correct one based on your simulator:
+Blendkit models upon selection are converted to sdf format before being uploaded to the fileserver, and (at present) two mesh objects are provided, `.obj` (the default) and `.glb` (which stores more information about model shaders, but is incompatible with gazebo). As a result, there will be two `sdf` files (and two `config` files) created. Make sure to call the correct one based on your simulator:
 
-* `gazebo-model.sdf` (which will reference the .obj mesh)
-* `kesko-model.sdf` (which will reference the .glb mesh)
+* `model.sdf` (which will reference the .obj mesh)
+* `gltf-model.sdf` (which will reference the .glb mesh)

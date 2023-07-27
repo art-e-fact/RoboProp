@@ -30,7 +30,7 @@ Models added from Fuel will extract in the regular "fuel" manner and so can be c
 ```
 <model name="my_model">
     <include>
-        <uri>models://my_model_name/model.sdf</uri>
+        <uri>model_folder</uri>
     </include>
     <pose>0 0 0 0 0 0</pose>
 </model>

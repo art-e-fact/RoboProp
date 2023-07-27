@@ -58,8 +58,8 @@ def export_sdf(path_model: Path, model_name: str):
         for path_sdf, path_visual in zip(sdf_paths, visual_paths):
             sdf = ElementTree.Element("sdf", attrib={"version": sdf_version})
             model = ElementTree.SubElement(sdf, "model", attrib={"name": model_name})
-            statit_xml = ElementTree.SubElement(model, "static")
-            statit_xml.text = str(True)
+            static_xml = ElementTree.SubElement(model, "static")
+            static_xml.text = str(True)
             link = ElementTree.SubElement(
                 model, "link", attrib={"name": f"{model_name}_link"}
             )

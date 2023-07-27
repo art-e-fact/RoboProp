@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from pathlib import Path
 
 # COLLISION_EXTENSION = ".stl"
-OBJECT_TYPES = [["gazebo", ".obj"], ["kesko", ".glb"]]
+OBJECT_TYPES = [["default", ".obj"], ["gltf", ".glb"]]
 
 
 def export_sdf(path_model: Path, model_name: str):
@@ -14,10 +14,16 @@ def export_sdf(path_model: Path, model_name: str):
         os.path.join(path_model, f"assets/visual{ext}") for _, ext in OBJECT_TYPES
     ]
     sdf_paths = [
-        os.path.join(path_model, f"{sim}-model.sdf") for sim, _ in OBJECT_TYPES
+        os.path.join(
+            path_model, "model.sdf" if sim == "default" else f"{sim}-model.sdf"
+        )
+        for sim, _ in OBJECT_TYPES
     ]
     config_paths = [
-        os.path.join(path_model, f"{sim}-model.config") for sim, _ in OBJECT_TYPES
+        os.path.join(
+            path_model, "model.config" if sim == "default" else f"{sim}-model.config"
+        )
+        for sim, _ in OBJECT_TYPES
     ]
     sdf_version = "1.9"
 

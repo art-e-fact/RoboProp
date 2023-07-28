@@ -6,8 +6,12 @@
 
 ## Development
 
-* Styling: Tailwind and Flowbite
+* [Development Wiki Page](https://github.com/art-e-fact/RoboProp/wiki/development)
 
 ## Usage
 
 * [Calling and Using Models](https://github.com/art-e-fact/RoboProp/wiki/usage#calling-and-using-models)
+
+## Troubleshooting
+
+* [Troubleshooting Wiki Page](https://github.com/art-e-fact/RoboProp/wiki/troubleshooting)

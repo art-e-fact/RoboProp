@@ -1,14 +1,14 @@
-import bpy
 import os
 from xml.dom import minidom
 from xml.etree import ElementTree
 from pathlib import Path
+import subprocess
 
 # COLLISION_EXTENSION = ".stl"
 OBJECT_TYPES = [["default", ".obj"], ["gltf", ".glb"]]
 
 
-def export_sdf(path_model: Path, model_name: str):
+def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
     # path_collision = os.path.join(path_model, f"assets/collision{COLLISION_EXTENSION}")
     visual_paths = [
         os.path.join(path_model, f"assets/visual{ext}") for _, ext in OBJECT_TYPES
@@ -26,23 +26,6 @@ def export_sdf(path_model: Path, model_name: str):
         for sim, _ in OBJECT_TYPES
     ]
     sdf_version = "1.9"
-
-    def separate_meshes_by_material(obj):
-        all_objects_before = list(bpy.data.objects)
-        ctx = bpy.context.copy()
-        ctx["object"] = obj
-        bpy.ops.mesh.separate(ctx, type="MATERIAL")
-        new_objects = [o for o in bpy.data.objects if o not in all_objects_before]
-        parts = [obj] + new_objects
-        return parts
-
-    # Util for duplicating a Blender object
-    def duplicate(obj, add_to_scene=True):
-        obj_copy = obj.copy()
-        obj_copy.data = obj_copy.data.copy()
-        if add_to_scene:
-            bpy.context.scene.collection.objects.link(obj_copy)
-        return obj_copy
 
     # Util for saving an XML file
     def write_xml(xml: ElementTree.Element, filepath: str):
@@ -92,31 +75,30 @@ def export_sdf(path_model: Path, model_name: str):
             write_xml(model_config, path_config)
 
     def export_model(with_materials: bool):
+        def run_export(export_script):
+            cmd = [
+                "blender",
+                blend_file_path,
+                "--background",
+                "--factory-startup", 
+                "--python",
+                Path(__file__).parent / "blender_scripts" / export_script,
+                "--",
+                "--output",
+                path_visual,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            
         for path_visual in visual_paths:
             os.makedirs(name=os.path.dirname(path_visual), exist_ok=True)
-            bpy.ops.object.select_all(action="SELECT")
             if Path(path_visual).suffix == ".obj":
-                bpy.ops.export_scene.obj(
-                    filepath=path_visual,
-                    check_existing=False,
-                    # Use ROS coordinate frame
-                    axis_forward="Y",
-                    axis_up="Z",
-                    use_selection=True,
-                    use_materials=with_materials,
-                    use_triangles=True,
-                    # copy all the texture images next to the model
-                    path_mode="COPY",
-                )
+                run_export("export_obj.py")
             elif Path(path_visual).suffix == ".glb":
-                bpy.ops.export_scene.gltf(
-                    filepath=path_visual,
-                    check_existing=False,
-                    use_selection=True,
-                    export_materials="EXPORT" if with_materials else "NONE",
-                    export_format="GLB",
-                    export_image_format="AUTO",
-                )
+                run_export("export_glb.py")
             else:
                 raise ValueError(
                     f"Exporting models the with extension '{Path(path_visual).suffix}' is not implemented yet. (Appears in {path_visual})"
@@ -125,9 +107,6 @@ def export_sdf(path_model: Path, model_name: str):
         print(f"Saved {path_visual}")
 
     export_model(with_materials=True)
-    # TODO separate meshes and collect texture info
-    # Delete the duplicated objects
-    bpy.ops.object.delete()
 
     # Create the model.sdf file
     generate_sdf()

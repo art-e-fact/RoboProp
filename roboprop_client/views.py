@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from roboprop_client.load_blenderkit import load_blenerkit_model
 import roboprop_client.utils as utils
 
 
@@ -220,42 +221,19 @@ def __add_blendkit_thumbnail(thumbnail, folder_name):
 
 
 def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
-    command = [
-        "blenderproc",
-        "run",
-        "roboprop_client/load_blenderproc.py",
-        "--asset_base_id",
-        asset_base_id,
-        "--output_path",
-        "models",
-        "--model_name",
-        folder_name,
-    ]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode != 0:
-        # Handle error
-        print(f"Error running command: {command}")
-        print(f"stdout: {stdout}")
-        print(f"stderr: {stderr}")
-        return response.status_code == 500
-    else:
-        # Handle success
-        print(f"Command ran successfully: {command}")
-        print(f"stdout: {stdout}")
-        print(f"stderr: {stderr}")
+    load_blenerkit_model(asset_base_id, "models", folder_name)
 
-        __add_blendkit_thumbnail(thumbnail, folder_name)
-        zip_filename, zip_path = utils.create_zip_file(folder_name)
-        # Upload the ZIP file in a POST request
-        with open(zip_path, "rb") as zip_file:
-            files = {"files": (zip_filename, zip_file)}
-            asset_name = os.path.splitext(zip_filename)[0]
-            url = f"models/{asset_name}/"
-            response = utils.make_post_request(url, files=files)
+    __add_blendkit_thumbnail(thumbnail, folder_name)
+    zip_filename, zip_path = utils.create_zip_file(folder_name)
+    # Upload the ZIP file in a POST request
+    with open(zip_path, "rb") as zip_file:
+        files = {"files": (zip_filename, zip_file)}
+        asset_name = os.path.splitext(zip_filename)[0]
+        url = f"models/{asset_name}/"
+        response = utils.make_post_request(url, files=files)
 
-        utils.delete_folders(["models", "textures"])
-        return response
+    utils.delete_folders(["models", "textures"])
+    return response
 
 
 def _check_and_get_index(request):

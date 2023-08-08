@@ -1,5 +1,3 @@
-import blenderproc as bproc
-import bpy
 import uuid
 from pathlib import Path
 import requests
@@ -92,22 +90,19 @@ def add_demo_world(model_path: Path):
 
     return demo_path
 
-
-def main(args):
-    # Start a clean Blender proceess
-    bproc.init()
-
+def load_blenerkit_model(asset_base_id: str, output_path: str, model_name: str = None):
     # Load asset meta data from BlenderKit
-    meta = load_asset_meta(args.asset_base_id)
+    meta = load_asset_meta(asset_base_id)
 
-    if not args.model_name:
-        args.model_name = meta["name"]
+    if not model_name:
+        model_name = meta["name"]
 
     blend_file = load_model_from_blenderkit(meta)
-    model_path = Path(args.output_path) / args.model_name
-    objs = bproc.loader.load_blend(blend_file)
-    bpy.ops.file.unpack_all(method="USE_LOCAL")
-    export_sdf(model_path, args.model_name)
+    model_path = Path(output_path) / model_name
+    # objs = bproc.loader.load_blend(blend_file)
+    # bpy.ops.wm.open_mainfile(filepath=blend_file)
+    # bpy.ops.file.unpack_all(method="USE_LOCAL")
+    export_sdf(model_path, model_name, blend_file)
 
     # Save meta data in the model folder
     meta_path = model_path / "blenderkit_meta.json"
@@ -117,12 +112,18 @@ def main(args):
     demo_path = add_demo_world(model_path)
 
 
+def main(args):
+    
+
+    load_blenerkit_model(args.asset_base_id, args.output_path, args.model_name)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""
         CLI app for converting BlenderKit models to (Gazebo) SDF
         Example usage:
-          blenderproc run load.py --asset_base_id 42f9e34f-f817-4505-b000-f86be1a68c8b --output_path models --model_name StrangeChair
+          python roboprop_client/load_blenderkit.py --asset_base_id 42f9e34f-f817-4505-b000-f86be1a68c8b --output_path models --model_name StrangeChair
         """
     )
 

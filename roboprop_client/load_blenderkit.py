@@ -91,7 +91,11 @@ def add_demo_world(model_path: Path):
     return demo_path
 
 
+<<<<<<< HEAD
 def load_blenderkit_model(asset_base_id: str, output_path: str, model_name: str = None):
+=======
+def load_blenerkit_model(asset_base_id: str, output_path: str, model_name: str = None):
+>>>>>>> 1b6ed9e (Allow reconversion of all current blendkit models)
     # Load asset meta data from BlenderKit
     meta = load_asset_meta(asset_base_id)
 
@@ -114,7 +118,11 @@ def load_blenderkit_model(asset_base_id: str, output_path: str, model_name: str 
 
 
 def main(args):
+<<<<<<< HEAD
     load_blenderkit_model(args.asset_base_id, args.output_path, args.model_name)
+=======
+    load_blenerkit_model(args.asset_base_id, args.output_path, args.model_name)
+>>>>>>> 1b6ed9e (Allow reconversion of all current blendkit models)
 
 
 if __name__ == "__main__":

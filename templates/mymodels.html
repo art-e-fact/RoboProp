@@ -6,7 +6,12 @@
     <h2 class="text-2xl text-center">My Models</h2>
     {% include "components/_message_block.html" %}
     {% include "components/_upload_modal.html" %}
+    <button class="block text-white bg-action/80 hover:bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="button" onClick="updateBlendkitModels()">
+        Update Blendkit Models
+    </button>
     {% include "components/_category_block.html" %}
+    <div id="notification" class="hidden font-bold px-4 py-2 rounded-md text-white w-2/3 my-2">
+    </div>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         {% for thumbnail in thumbnails %}
         <a href="{% url 'mymodel_detail' name=thumbnail.name %}">
@@ -21,4 +26,35 @@
         </a>
         {% endfor %}
     </div>
+
+    <script>
+        function updateBlendkitModels() {
+            const notification = document.querySelector('#notification');
+            notification.innerHTML = '';
+            if (!notification.classList.contains('hidden')) {
+                notification.classList.add('hidden');
+            }
+            const data = {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            };
+            $.ajax({
+                url: '/update-models-from-blendkit/',
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    notification.innerHTML = response.message;
+                    notification.classList.remove('hidden');
+                    notification.classList.remove('bg-red-500/80');
+                    notification.classList.add('bg-green-500/80');
+                },
+                error: function(error) {
+                    notification.innerHTML = error.responseJSON.error;
+                    notification.classList.remove('hidden');
+                    notification.classList.remove('bg-green-500/80');
+                    notification.classList.add('bg-red-500/80');
+                },
+            });
+        }
+
+    </script>
 {% endblock %}

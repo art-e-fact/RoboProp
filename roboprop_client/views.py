@@ -544,3 +544,42 @@ def add_metadata(request, name):
     else:
         messages.error(request, "No metadata available")
         return redirect("mymodels")
+
+
+def update_models_from_blendkit(request):
+    if request.method == "POST":
+        # get index.json
+        index = _check_and_get_index(request)
+        for model in index:
+            # check if model has key assetBaseId, i.e is from blendkit
+            if "assetBaseId" in index[model]:
+                asset_base_id = index[model]["assetBaseId"]
+                folder_name = model
+                # We get again the original thumbnail url (even if though we have it) as
+                # this means we can reuse the original blendkit conversion logic when first uploading
+                # to Roboprop
+                response = utils.make_get_request(
+                    "models/" + folder_name + "/blenderkit_meta.json"
+                )
+                metadata = json.loads(response.content)
+                thumbnail = metadata["thumbnailMiddleUrl"]
+                response = __add_blendkit_model_to_my_models(
+                    folder_name, asset_base_id, thumbnail
+                )
+                if response.status_code != 201:
+                    return JsonResponse(
+                        {"error": f"Update Failed"}, status=response.status_code
+                    )
+        # reupload index.json
+        response = utils.make_put_request("index.json", data=json.dumps(index))
+        if response.status_code == 201:
+            return JsonResponse(
+                {"message": f"Success: All models from blendkit updated"}, status=201
+            )
+        else:
+            return JsonResponse(
+                {"error": f"Models updated, but index.json failed to reupload"},
+                status=500,
+            )
+    else:
+        return JsonResponse({"error": "Invalid request method"}, status=405)

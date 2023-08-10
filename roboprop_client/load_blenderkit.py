@@ -90,6 +90,7 @@ def add_demo_world(model_path: Path):
 
     return demo_path
 
+
 def load_blenderkit_model(asset_base_id: str, output_path: str, model_name: str = None):
     # Load asset meta data from BlenderKit
     meta = load_asset_meta(asset_base_id)
@@ -113,8 +114,6 @@ def load_blenderkit_model(asset_base_id: str, output_path: str, model_name: str 
 
 
 def main(args):
-    
-
     load_blenderkit_model(args.asset_base_id, args.output_path, args.model_name)
 
 

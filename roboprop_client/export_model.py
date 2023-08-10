@@ -80,7 +80,7 @@ def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
                 "blender",
                 blend_file_path,
                 "--background",
-                "--factory-startup", 
+                "--factory-startup",
                 "--python",
                 Path(__file__).parent / "blender_scripts" / export_script,
                 "--",
@@ -92,7 +92,7 @@ def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
                 print(result.stdout)
             if result.stderr:
                 print(result.stderr)
-            
+
         for path_visual in visual_paths:
             os.makedirs(name=os.path.dirname(path_visual), exist_ok=True)
             if Path(path_visual).suffix == ".obj":

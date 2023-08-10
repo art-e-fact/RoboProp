@@ -16,7 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from roboprop_client.load_blenderkit import load_blenerkit_model
+from roboprop_client.load_blenderkit import load_blenderkit_model
 import roboprop_client.utils as utils
 
 
@@ -221,7 +221,7 @@ def __add_blendkit_thumbnail(thumbnail, folder_name):
 
 
 def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
-    load_blenerkit_model(asset_base_id, "models", folder_name)
+    load_blenderkit_model(asset_base_id, "models", folder_name)
 
     __add_blendkit_thumbnail(thumbnail, folder_name)
     zip_filename, zip_path = utils.create_zip_file(folder_name)

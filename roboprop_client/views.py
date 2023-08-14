@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from roboprop_client.load_blenderkit import load_blenderkit_model
 import roboprop_client.utils as utils
 
 
@@ -220,42 +221,19 @@ def __add_blendkit_thumbnail(thumbnail, folder_name):
 
 
 def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
-    command = [
-        "blenderproc",
-        "run",
-        "roboprop_client/load_blenderproc.py",
-        "--asset_base_id",
-        asset_base_id,
-        "--output_path",
-        "models",
-        "--model_name",
-        folder_name,
-    ]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode != 0:
-        # Handle error
-        print(f"Error running command: {command}")
-        print(f"stdout: {stdout}")
-        print(f"stderr: {stderr}")
-        return response.status_code == 500
-    else:
-        # Handle success
-        print(f"Command ran successfully: {command}")
-        print(f"stdout: {stdout}")
-        print(f"stderr: {stderr}")
+    load_blenderkit_model(asset_base_id, "models", folder_name)
 
-        __add_blendkit_thumbnail(thumbnail, folder_name)
-        zip_filename, zip_path = utils.create_zip_file(folder_name)
-        # Upload the ZIP file in a POST request
-        with open(zip_path, "rb") as zip_file:
-            files = {"files": (zip_filename, zip_file)}
-            asset_name = os.path.splitext(zip_filename)[0]
-            url = f"models/{asset_name}/"
-            response = utils.make_post_request(url, files=files)
+    __add_blendkit_thumbnail(thumbnail, folder_name)
+    zip_filename, zip_path = utils.create_zip_file(folder_name)
+    # Upload the ZIP file in a POST request
+    with open(zip_path, "rb") as zip_file:
+        files = {"files": (zip_filename, zip_file)}
+        asset_name = os.path.splitext(zip_filename)[0]
+        url = f"models/{asset_name}/"
+        response = utils.make_post_request(url, files=files)
 
-        utils.delete_folders(["models", "textures"])
-        return response
+    utils.delete_folders(["models", "textures"])
+    return response
 
 
 def _check_and_get_index(request):
@@ -566,3 +544,42 @@ def add_metadata(request, name):
     else:
         messages.error(request, "No metadata available")
         return redirect("mymodels")
+
+
+def update_models_from_blendkit(request):
+    if request.method == "POST":
+        # get index.json
+        index = _check_and_get_index(request)
+        for model in index:
+            # check if model has key assetBaseId, i.e is from blendkit
+            if "assetBaseId" in index[model]:
+                asset_base_id = index[model]["assetBaseId"]
+                folder_name = model
+                # We get again the original thumbnail url (even if though we have it) as
+                # this means we can reuse the original blendkit conversion logic when first uploading
+                # to Roboprop
+                response = utils.make_get_request(
+                    "models/" + folder_name + "/blenderkit_meta.json"
+                )
+                metadata = json.loads(response.content)
+                thumbnail = metadata["thumbnailMiddleUrl"]
+                response = __add_blendkit_model_to_my_models(
+                    folder_name, asset_base_id, thumbnail
+                )
+                if response.status_code != 201:
+                    return JsonResponse(
+                        {"error": f"Update Failed"}, status=response.status_code
+                    )
+        # reupload index.json
+        response = utils.make_put_request("index.json", data=json.dumps(index))
+        if response.status_code == 201:
+            return JsonResponse(
+                {"message": f"Success: All models from blendkit updated"}, status=201
+            )
+        else:
+            return JsonResponse(
+                {"error": f"Models updated, but index.json failed to reupload"},
+                status=500,
+            )
+    else:
+        return JsonResponse({"error": "Invalid request method"}, status=405)

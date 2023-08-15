@@ -258,6 +258,8 @@ def _add_blendkit_model_metadata(request, folder_name):
         "categories": categories,
         "description": description,
         "url": utils.FILESERVER_URL + f"models/{folder_name}/?zip=true",
+        "source": "Blendkit",
+        "scale": 1.0
     }
     response = utils.make_put_request("index.json", data=json.dumps(index))
     return response

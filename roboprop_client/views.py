@@ -258,36 +258,39 @@ def _check_and_get_index(request):
     return index
 
 
-def _add_blendkit_model_metadata(request, folder_name):
-    tags, categories, description = _get_blendkit_metadata(folder_name)
+def __update_index(request, model_name, model_metadata, model_source):
     index = _check_and_get_index(request)
-
-    index[folder_name] = {
-        "tags": tags,
-        "categories": categories,
-        "description": description,
-        "url": utils.FILESERVER_URL + f"models/{folder_name}/?zip=true",
-        "source": "Blendkit",
-        "scale": 1.0,
-    }
+    url_safe_name = urllib.parse.quote(model_name)
+    model_metadata["source"] = model_source
+    model_metadata["scale"] = 1.0
+    model_metadata["url"] = utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true"
+    index[model_name] = model_metadata
     response = utils.make_put_request("index.json", data=json.dumps(index))
     return response
 
 
+def _add_blendkit_model_metadata(request, folder_name):
+    tags, categories, description = _get_blendkit_metadata(folder_name)
+    metadata = {
+        "tags": tags,
+        "categories": categories,
+        "description": description,
+    }
+
+    response = __update_index(request, folder_name, metadata, "Blendkit")
+    return response
+
+
 def _add_fuel_model_metadata(request, name, description):
-    index = _check_and_get_index(request)
     tags, categories, colors = __create_metadata_from_rekognition(name)
-    url_safe_name = urllib.parse.quote(name)
-    index[name] = {
+    metadata = {
         "tags": tags,
         "categories": categories,
         "colors": colors,
         "description": description,
-        "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
-        "source": "Fuel",
-        "scale": 1.0,
     }
-    response = utils.make_put_request("index.json", data=json.dumps(index))
+
+    response = __update_index(request, name, metadata, "Fuel")
     return response
 
 
@@ -388,16 +391,13 @@ def mymodels(request):
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
             model_name = os.path.splitext(file.name)[0]
-            thumbnails = _get_thumbnails([model_name], "models", gallery=False)
-            if all(thumbnail["image"] is not None for thumbnail in thumbnails):
-                base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
-                tags, categories, colors = _get_suggested_tags(base64_thumbnails)
-                request.session["model_meta_data"] = {
-                    "name": model_name,
-                    "tags": tags,
-                    "categories": categories,
-                    "colors": colors,
-                }
+            tags, categories, colors = __create_metadata_from_rekognition(model_name)
+            request.session["model_meta_data"] = {
+                "name": model_name,
+                "tags": tags,
+                "categories": categories,
+                "colors": colors,
+            }
             return redirect("add_metadata", name=model_name)
         else:
             messages.error(request, "Failed to upload model")
@@ -530,19 +530,13 @@ def add_metadata(request, name):
                     utils.create_list_from_string(request.POST.get(custom_field))
                 )
 
-        index = _check_and_get_index(request)
-        url_safe_name = urllib.parse.quote(name)
-
-        index[name] = {
+        metadata = {
             "tags": tags,
             "categories": categories,
             "colors": colors,
-            "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
         }
 
-        # The PUT will actually make an index.json the first time
-        # around as well, so a POST to create is not needed.
-        response = utils.make_put_request("index.json", data=json.dumps(index))
+        response = __update_index(request, name, metadata, "Upload")
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:

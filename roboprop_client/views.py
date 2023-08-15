@@ -498,17 +498,7 @@ def add_metadata(request, name):
                     utils.create_list_from_string(request.POST.get(custom_field))
                 )
 
-        file = "index.json"
-        response = utils.make_get_request(file)
-        if response.status_code == 200:
-            # Convert the JSON response to a dictionary
-            index = json.loads(response.content)
-        elif response.status_code == 404:
-            index = {}
-        else:
-            messages.error(request, "Failed to fetch index.json")
-            return redirect("mymodels")
-
+        index = _check_and_get_index(request)
         url_safe_name = urllib.parse.quote(name)
 
         index[name] = {

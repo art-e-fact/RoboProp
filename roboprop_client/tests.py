@@ -270,9 +270,7 @@ class MyModelsUploadTestCase(TestCase):
     def test_file_upload_success(self, mock_post):
         mock_post.return_value.status_code = 201
         response = self.client.post(self.url, {"file": self.file})
-        self.assertRedirects(
-            response, "/add-metadata/KitchenSink/", target_status_code=302
-        )
+        self.assertRedirects(response, "/add-metadata/KitchenSink/")
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Model uploaded successfully")
@@ -306,7 +304,9 @@ class AddToMyModelsTestCase(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
             response.json(),
-            {"message": "Success: Model: test_model added to My Models"},
+            {
+                "message": "Success: Model: test_model added to My Models, and successfully tagged"
+            },
         )
 
     @patch("roboprop_client.views.__add_blendkit_model_to_my_models")

@@ -89,6 +89,7 @@ def _search_and_cache(search):
     # Check if the results are already cached
     cache_key = f"search_results_{search}"
     search_results = cache.get(cache_key)
+    blendkit_free = False if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else True
 
     # i.e if there is no cache
     if not search_results:
@@ -97,7 +98,7 @@ def _search_and_cache(search):
                 f"https://fuel.gazebosim.org/1.0/models?q={search}", "fuel"
             ),
             "blendkit": __search_external_library(
-                f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:True&page=1",
+                f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:{blendkit_free}&page=1",
                 "blendkit",
             ),
         }
@@ -276,8 +277,8 @@ def _add_blendkit_model_metadata(request, folder_name):
         "categories": categories,
         "description": description,
     }
-
-    response = __update_index(request, folder_name, metadata, "Blendkit")
+    source = "Blendkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blendkit"
+    response = __update_index(request, folder_name, metadata, source)
     return response
 
 

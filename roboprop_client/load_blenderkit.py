@@ -6,6 +6,7 @@ import os
 import argparse
 import sys
 import json
+import roboprop_client.utils as utils
 
 # Trick to allow importing from the same directory in Blender
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -68,7 +69,15 @@ def load_model_from_blenderkit(meta):
 
     download_url = download_url + "?scene_uuid=" + scene_uuid
     # Download metadata for blend file
-    response = requests.get(download_url)
+    if len(utils.BLENDERKIT_PRO_API_KEY) == 0:
+        # Can only use free models, so no API key is needed
+        response = requests.get(download_url)
+    else:
+        # Having an API key = having a subscription
+        response = requests.get(
+            download_url,
+            headers={"Authorization": "Bearer " + utils.BLENDERKIT_PRO_API_KEY},
+        )
     data = response.json()
     # Extract actual download path
     file_path = data["filePath"]

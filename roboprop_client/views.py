@@ -277,8 +277,8 @@ def _add_blendkit_model_metadata(request, folder_name):
         "categories": categories,
         "description": description,
     }
-
-    response = __update_index(request, folder_name, metadata, "Blendkit")
+    source = "Blendkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blendkit"
+    response = __update_index(request, folder_name, metadata, source)
     return response
 
 

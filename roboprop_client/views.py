@@ -236,6 +236,15 @@ def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     return response
 
 
+def __create_metadata_from_rekognition(name):
+    thumbnails = _get_thumbnails([name], "models", gallery=False)
+    tags, categories, colors = [], [], []
+    if all(thumbnail["image"] is not None for thumbnail in thumbnails):
+        base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
+        tags, categories, colors = _get_suggested_tags(base64_thumbnails)
+    return tags, categories, colors
+
+
 def _check_and_get_index(request):
     response = utils.make_get_request("index.json")
     if response.status_code == 200:
@@ -249,17 +258,39 @@ def _check_and_get_index(request):
     return index
 
 
+def __update_index(request, model_name, model_metadata, model_source):
+    index = _check_and_get_index(request)
+    url_safe_name = urllib.parse.quote(model_name)
+    model_metadata["source"] = model_source
+    model_metadata["scale"] = 1.0
+    model_metadata["url"] = utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true"
+    index[model_name] = model_metadata
+    response = utils.make_put_request("index.json", data=json.dumps(index))
+    return response
+
+
 def _add_blendkit_model_metadata(request, folder_name):
     tags, categories, description = _get_blendkit_metadata(folder_name)
-    index = _check_and_get_index(request)
-
-    index[folder_name] = {
+    metadata = {
         "tags": tags,
         "categories": categories,
         "description": description,
-        "url": utils.FILESERVER_URL + f"models/{folder_name}/?zip=true",
     }
-    response = utils.make_put_request("index.json", data=json.dumps(index))
+
+    response = __update_index(request, folder_name, metadata, "Blendkit")
+    return response
+
+
+def _add_fuel_model_metadata(request, name, description):
+    tags, categories, colors = __create_metadata_from_rekognition(name)
+    metadata = {
+        "tags": tags,
+        "categories": categories,
+        "colors": colors,
+        "description": description,
+    }
+
+    response = __update_index(request, name, metadata, "Fuel")
     return response
 
 
@@ -360,16 +391,13 @@ def mymodels(request):
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
             model_name = os.path.splitext(file.name)[0]
-            thumbnails = _get_thumbnails([model_name], "models", gallery=False)
-            if all(thumbnail["image"] is not None for thumbnail in thumbnails):
-                base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
-                tags, categories, colors = _get_suggested_tags(base64_thumbnails)
-                request.session["model_meta_data"] = {
-                    "name": model_name,
-                    "tags": tags,
-                    "categories": categories,
-                    "colors": colors,
-                }
+            tags, categories, colors = __create_metadata_from_rekognition(model_name)
+            request.session["model_meta_data"] = {
+                "name": model_name,
+                "tags": tags,
+                "categories": categories,
+                "colors": colors,
+            }
             return redirect("add_metadata", name=model_name)
         else:
             messages.error(request, "Failed to upload model")
@@ -425,6 +453,7 @@ def add_to_my_models(request):
         library = request.POST.get("library")
         if library == "fuel":
             owner = request.POST.get("owner")
+            description = request.POST.get("description")
             response = __add_fuel_model_to_my_models(name, owner)
         elif library == "blendkit":
             thumbnail = request.POST.get("thumbnail")
@@ -433,20 +462,23 @@ def add_to_my_models(request):
             response = __add_blendkit_model_to_my_models(
                 folder_name, asset_base_id, thumbnail
             )
-        # Go to suggested tags
+
+        metadata_response = None
+        # If model upload succeeds, add metadata
         if response.status_code == 201 and library == "blendkit":
-            response = _add_blendkit_model_metadata(request, folder_name)
-            if response.status_code == 201:
+            metadata_response = _add_blendkit_model_metadata(request, folder_name)
+        elif response.status_code == 201 and library == "fuel":
+            metadata_response = _add_fuel_model_metadata(request, name, description)
+        else:
+            response_data = {"error": f"Failed to add model: {name} to My Models"}
+        # If both the model and metadata are successfully uploaded
+        if metadata_response is not None:
+            if metadata_response.status_code == 201:
                 response_data = {
-                    "message": f"Success: Model: {name} added to My Models, and succesfully tagged"
+                    "message": f"Success: Model: {name} added to My Models, and successfully tagged"
                 }
             else:
                 response_data = {"error": f"Model: {name} uploaded, but failed to tag"}
-        elif response.status_code == 201 and library == "fuel":
-            response_data = {"message": f"Success: Model: {name} added to My Models"}
-        else:
-            response_data = {"error": f"Failed to add model: {name} to My Models"}
-
         return JsonResponse(response_data, status=response.status_code)
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
@@ -498,29 +530,13 @@ def add_metadata(request, name):
                     utils.create_list_from_string(request.POST.get(custom_field))
                 )
 
-        file = "index.json"
-        response = utils.make_get_request(file)
-        if response.status_code == 200:
-            # Convert the JSON response to a dictionary
-            index = json.loads(response.content)
-        elif response.status_code == 404:
-            index = {}
-        else:
-            messages.error(request, "Failed to fetch index.json")
-            return redirect("mymodels")
-
-        url_safe_name = urllib.parse.quote(name)
-
-        index[name] = {
+        metadata = {
             "tags": tags,
             "categories": categories,
             "colors": colors,
-            "url": utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true",
         }
 
-        # The PUT will actually make an index.json the first time
-        # around as well, so a POST to create is not needed.
-        response = utils.make_put_request("index.json", data=json.dumps(index))
+        response = __update_index(request, name, metadata, "Upload")
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:

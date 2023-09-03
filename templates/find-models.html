@@ -3,11 +3,21 @@
 {% block title %}Find Models{% endblock %}
 
 {% block content %}
-    <div class="flex justify-center">
-        <form method="get" action="{% url 'find-models' %}">
-            <input type="text" name="search" placeholder="Search...">
-            <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Search</button>
-        </form>
+    <div class="flex justify-between">
+        <div class="flex flex-col">
+            <p>Search on Fuel or Blendkit</p>
+            <form method="get" action="{% url 'find-models' %}" class="flex">
+                <input type="text" name="search" placeholder="Search..." class="mr-2">
+                <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Search</button>
+            </form>
+        </div>
+        <div class="flex flex-col">
+            <p>Add a model directly from Blendkit using the model's Asset Base ID</p>
+            <form method="get" action="{% url 'find-models' %}" class="flex">
+                <input type="text" name="add-directly" placeholder="Blenderkit Asset Base ID" class="mr-2">
+                <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Blenderkit Asset Base ID</button>
+            </form>
+        </div>
     </div>
 
     {% if fuel_models %}
@@ -56,7 +66,6 @@
     {% if search and not fuel_models and not blendkit_models %}
         <p class="m-3">No models found for search term: {{ search }} </p>
     {% endif %}
-    
     <script>
         function addModel(data) {
             const notification = document.querySelector('#notification');
@@ -104,5 +113,6 @@
             };
             addModel(data);
         }
+
     </script>
 {% endblock %}

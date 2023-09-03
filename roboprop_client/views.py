@@ -427,6 +427,7 @@ def mymodel_detail(request, name):
 def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
+    blenderkit_id = request.GET.get("add-directly", "")
     fuel_models = []
     blendkit_models = []
 
@@ -440,6 +441,14 @@ def find_models(request):
         for result in search_results["blendkit"]:
             blendkit_model_details = _get_blendkit_model_details(result)
             blendkit_models.append(blendkit_model_details)
+    elif blenderkit_id:
+        result = requests.get(
+            f"https://www.blenderkit.com/api/v1/search/?query=asset_base_id:{blenderkit_id}"
+        )
+        data = result.json()["results"][0]
+        blendkit_model_details = _get_blendkit_model_details(data)
+        blendkit_models.append(blendkit_model_details)
+
     context = {
         "search": search,
         "fuel_models": fuel_models,

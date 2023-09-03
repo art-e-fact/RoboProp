@@ -9,6 +9,12 @@
             <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Search</button>
         </form>
     </div>
+    <div class="flex justify-center">
+        <form method="get" action="{% url 'find-models' %}">
+            <input type="text" name="add-directly" placeholder="Blenderkit Asset Base ID">
+            <button type="submit" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2">Blenderkit Asset Base ID</button>
+        </form>
+    </div>
 
     {% if fuel_models %}
         <p class="m-3">Found {{ fuel_models|length }} models from fuel using search term: {{ search }}</p>
@@ -56,13 +62,6 @@
     {% if search and not fuel_models and not blendkit_models %}
         <p class="m-3">No models found for search term: {{ search }} </p>
     {% endif %}
-    
-    <p class="m-3">Add a blendkit model directly using the asset-base-id:</p>
-    <div class="flex mt-4">
-        <input type="text" class="w-96" id="blenderkit-model" placeholder="Enter BlenderKit asset base id...">
-        <button type="button" class="text-white bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center ml-2" onclick="addBlendkitModelDirectly()">Add Blenderkit Model</button>
-    </div>
-    
     <script>
         function addModel(data) {
             const notification = document.querySelector('#notification');
@@ -107,19 +106,9 @@
                 'thumbnail': thumbnail,
                 'library': 'blendkit',
                 'csrfmiddlewaretoken': '{{ csrf_token }}',
-                'direct': false
             };
             addModel(data);
         }
 
-        function addBlendKitModelDirectly() {
-            const data = {
-                'assetBaseId': document.getElementById("blenderkit-model").value;
-                'library': 'blendkit',
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-                'direct': true
-            }
-            addModel(data);
-        }
     </script>
 {% endblock %}

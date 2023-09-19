@@ -42,7 +42,7 @@ def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
             sdf = ElementTree.Element("sdf", attrib={"version": sdf_version})
             model = ElementTree.SubElement(sdf, "model", attrib={"name": model_name})
             static_xml = ElementTree.SubElement(model, "static")
-            static_xml.text = str(True)
+            static_xml.text = str(False)
             link = ElementTree.SubElement(
                 model, "link", attrib={"name": f"{model_name}_link"}
             )
@@ -54,6 +54,15 @@ def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
             visual_mesh = ElementTree.SubElement(visual_geometry, "mesh")
             visual_mesh_uri = ElementTree.SubElement(visual_mesh, "uri")
             visual_mesh_uri.text = os.path.relpath(
+                path_visual, os.path.dirname(path_sdf)
+            )
+            collision = ElementTree.SubElement(
+                link, "collision", attrib={"name": f"{model_name}_collision"}
+            )
+            collision_geometry = ElementTree.SubElement(collision, "geometry")
+            collision_mesh = ElementTree.SubElement(collision_geometry, "mesh")
+            collision_mesh_uri = ElementTree.SubElement(collision_mesh, "uri")
+            collision_mesh_uri.text = os.path.relpath(
                 path_visual, os.path.dirname(path_sdf)
             )
 

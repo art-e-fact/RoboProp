@@ -298,6 +298,13 @@ def _add_fuel_model_metadata(request, name, description):
     return response
 
 
+def __get_num_assets(asset_type):
+    assets = _get_assets(f"{asset_type}/")
+    if not assets:
+        return 0
+    return len(assets)
+
+
 """VIEWS"""
 
 
@@ -389,6 +396,8 @@ def user_settings(request):
 
 
 def mymodels(request):
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("page_size", 12))
     if request.method == "POST":
         file = request.FILES["file"]
         response = utils.upload_file(file, "models")
@@ -407,8 +416,18 @@ def mymodels(request):
             messages.error(request, "Failed to upload model")
             return redirect("mymodels")
 
-    gallery_thumbnails = _get_all_thumbnails("models")
-    return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
+    total_num_models = __get_num_assets("models")
+    gallery_thumbnails = _get_all_thumbnails("models", page, page_size)
+    return render(
+        request,
+        "mymodels.html",
+        {
+            "thumbnails": gallery_thumbnails,
+            "page": page,
+            "page_size": page_size,
+            "total_models": total_num_models,
+        },
+    )
 
 
 def mymodel_detail(request, name):

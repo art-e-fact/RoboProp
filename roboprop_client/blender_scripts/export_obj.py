@@ -16,7 +16,7 @@ args = parser.parse_known_args(argv)[0]
 output = Path(args.output)
 
 # Add Palanar Decimate modifyer to all meshes
-angle_limit = 12.0 # merge faces within this angle
+angle_limit = 12.0  # merge faces within this angle
 for obj in bpy.data.objects:
     if obj.type == "MESH":
         bpy.context.view_layer.objects.active = obj

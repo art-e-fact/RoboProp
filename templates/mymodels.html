@@ -28,6 +28,16 @@
         </a>
         {% endfor %}
     </div>
+    <div class="pagination">
+        <form method="get">
+          <input type="hidden" name="page_size" value="{{ page_size }}">
+          <label for="page">Page:</label>
+          <input type="number" name="page" id="page" value="{{ page }}" min="1" max="{{ total_pages }}" required>
+          <button type="submit" name="action" value="previous" {% if page == 1 %}disabled{% endif %}>Previous</button>
+          <button type="submit" name="action" value="next" {% if page == total_pages %}disabled{% endif %}>Next</button>
+        </form>
+      </div>
+      <p>Page {{ page }} of {{ total_pages }} ({{ page_size }} models per page)</p>
 
     <script>
         function updateBlendkitModels() {

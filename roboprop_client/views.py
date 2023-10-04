@@ -8,6 +8,7 @@ import urllib.parse
 import subprocess
 import zipfile
 import shutil
+import math
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -417,6 +418,7 @@ def mymodels(request):
             return redirect("mymodels")
 
     total_num_models = __get_num_assets("models")
+    total_pages = math.ceil(total_num_models / page_size)
     gallery_thumbnails = _get_all_thumbnails("models", page, page_size)
     return render(
         request,
@@ -426,6 +428,7 @@ def mymodels(request):
             "page": page,
             "page_size": page_size,
             "total_models": total_num_models,
+            "total_pages": total_pages,
         },
     )
 

@@ -30,15 +30,22 @@
     </div>
     <div class="pagination">
         <form method="get">
-          <label for="page_size">Page size:</label>
-          <input type="number" name="page_size" id="page_size" value="{{ page_size }}" min="1" max="100" required>
-          <label for="page">Page:</label>
-          <input type="number" name="page" id="page" value="{{ page }}" min="1" max="{{ total_pages }}" required>
-          <button type="submit" name="page" value="{{ page|add:'-1' }}" {% if page == 1 %}disabled{% endif %}>Previous</button>
-          <button type="submit" name="page" value="{{ page|add:1 }}" {% if page == total_pages %}disabled{% endif %}>Next</button>
+            <div class="flex justify-between items-center mt-4">
+                <div>
+                  <button type="submit" name="page" value="{{ page|add:'-1' }}" class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 {% if page == 1 %}opacity-50 cursor-not-allowed{% endif %}">Previous</button>
+                  <span class="mx-2">Page</span>
+                  <input type="number" name="page" id="page" value="{{ page }}" min="1" max="{{ total_pages }}" class="w-16 px-2 py-1 rounded-md bg-gray-200 text-gray-700 text-center" disabled>
+                  <span class="mx-2">of {{ total_pages }}</span>
+                  <button type="submit" name="page" value="{{ page|add:1 }}" class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 {% if page == total_pages %}opacity-50 cursor-not-allowed{% endif %}">Next</button>
+                </div>
+                <div>
+                  <label for="page_size" class="mr-2">Models per page:</label>
+                  <input type="number" name="page_size" id="page_size" value="{{ page_size }}" min="1" max="100" class="w-16 px-2 py-1 rounded-md bg-gray-200 text-gray-700 text-center" required>
+                </div>
+              </div>
+              <p class="mt-2">Showing {{ thumbnails|length }} models ({{ total_models }} total)</p>
         </form>
       </div>
-      <p>Page {{ page }} of {{ total_pages }} ({{ page_size }} models per page)</p>
 
     <script>
         function updateBlendkitModels() {

@@ -8,6 +8,7 @@ import urllib.parse
 import subprocess
 import zipfile
 import shutil
+import math
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -33,7 +34,10 @@ def _get_assets(url):
     return assets
 
 
-def _get_thumbnails(assets, asset_type, gallery=True):
+def _get_thumbnails(assets, asset_type, page=1, page_size=12, gallery=True):
+    start_index = (page - 1) * page_size
+    end_index = start_index + page_size
+    assets = assets[start_index:end_index]
     thumbnails = []
     for asset in assets:
         url = f"{asset_type}/{asset}/thumbnails/"
@@ -54,11 +58,11 @@ def _get_thumbnails(assets, asset_type, gallery=True):
     return thumbnails
 
 
-def _get_all_thumbnails(asset_type):
+def _get_all_thumbnails(asset_type, page=1, page_size=12):
     assets = _get_assets(f"{asset_type}/")
     if not assets:
         return []
-    thumbnails = _get_thumbnails(assets, asset_type)
+    thumbnails = _get_thumbnails(assets, asset_type, page, page_size)
     return thumbnails
 
 
@@ -238,7 +242,7 @@ def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
 
 
 def __create_metadata_from_rekognition(name):
-    thumbnails = _get_thumbnails([name], "models", gallery=False)
+    thumbnails = _get_thumbnails([name], "models", page=1, page_size=1, gallery=False)
     tags, categories, colors = [], [], []
     if all(thumbnail["image"] is not None for thumbnail in thumbnails):
         base64_thumbnails = list(thumbnail["image"] for thumbnail in thumbnails)
@@ -293,6 +297,13 @@ def _add_fuel_model_metadata(request, name, description):
 
     response = __update_index(request, name, metadata, "Fuel")
     return response
+
+
+def __get_num_assets(asset_type):
+    assets = _get_assets(f"{asset_type}/")
+    if not assets:
+        return 0
+    return len(assets)
 
 
 """VIEWS"""
@@ -386,6 +397,8 @@ def user_settings(request):
 
 
 def mymodels(request):
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("page_size", 12))
     if request.method == "POST":
         file = request.FILES["file"]
         response = utils.upload_file(file, "models")
@@ -404,8 +417,20 @@ def mymodels(request):
             messages.error(request, "Failed to upload model")
             return redirect("mymodels")
 
-    gallery_thumbnails = _get_all_thumbnails("models")
-    return render(request, "mymodels.html", {"thumbnails": gallery_thumbnails})
+    total_num_models = __get_num_assets("models")
+    total_pages = math.ceil(total_num_models / page_size)
+    gallery_thumbnails = _get_all_thumbnails("models", page, page_size)
+    return render(
+        request,
+        "mymodels.html",
+        {
+            "thumbnails": gallery_thumbnails,
+            "page": page,
+            "page_size": page_size,
+            "total_models": total_num_models,
+            "total_pages": total_pages,
+        },
+    )
 
 
 def mymodel_detail(request, name):
@@ -415,7 +440,7 @@ def mymodel_detail(request, name):
         "configuration": {},
     }
 
-    thumbnails = _get_thumbnails([name], "models", gallery=False)
+    thumbnails = _get_thumbnails([name], "models", page=1, page_size=1, gallery=False)
 
     for thumbnail in thumbnails:
         model_details["thumbnails"].append(thumbnail["image"])
@@ -512,7 +537,7 @@ def myrobot_detail(request, name):
         "thumbnails": [],
     }
 
-    thumbnails = _get_thumbnails([name], "robots", gallery=False)
+    thumbnails = _get_thumbnails([name], "robots", page=1, page_size=1, gallery=False)
 
     for thumbnail in thumbnails:
         robot_details["thumbnails"].append(thumbnail["image"])

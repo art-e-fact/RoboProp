@@ -494,10 +494,12 @@ def add_to_my_models(request):
             thumbnail = request.POST.get("thumbnail")
             asset_base_id = request.POST.get("assetBaseId")
             folder_name = utils.capitalize_and_remove_spaces(name)
-            response = __add_blendkit_model_to_my_models(
-                folder_name, asset_base_id, thumbnail
-            )
-
+            try:
+                response = __add_blendkit_model_to_my_models(
+                    folder_name, asset_base_id, thumbnail
+                )
+            except ValueError as e:
+                return JsonResponse({"error": str(e)}, status=500)
         metadata_response = None
         # If model upload succeeds, add metadata
         if response.status_code == 201 and library == "blendkit":

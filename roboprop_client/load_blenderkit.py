@@ -79,6 +79,8 @@ def load_model_from_blenderkit(meta):
             headers={"Authorization": "Bearer " + utils.BLENDERKIT_PRO_API_KEY},
         )
     data = response.json()
+    if response.status_code == 401:
+        raise ValueError("Error: Blenderkit API Key is invalid or expired")
     # Extract actual download path
     file_path = data["filePath"]
     # Download the file

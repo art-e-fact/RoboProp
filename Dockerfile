@@ -21,8 +21,11 @@ RUN apk update \
     && apk add postgresql-dev gcc python3-dev musl-dev \
     && apk del build-deps \
     && apk --no-cache add musl-dev linux-headers g++
+
+RUN apk add --update nodejs npm
 # install dependencies
 RUN pip install --upgrade pip
 # copy project
 COPY . $MICRO_SERVICE
+RUN npm install
 RUN pip install -r requirements.txt

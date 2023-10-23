@@ -26,6 +26,6 @@ RUN apk add --update nodejs npm
 # install dependencies
 RUN pip install --upgrade pip
 # copy project
-COPY . $MICRO_SERVICE
+COPY . $ROBOPROP_CLIENT
 RUN npm install
 RUN pip install -r requirements.txt

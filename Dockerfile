@@ -1,15 +1,15 @@
 FROM python:3.9.13-alpine
 
-ENV MICRO_SERVICE=/home/app/microservice
+ENV ROBOPROP_CLIENT=/home/app/roboprop
 RUN addgroup -S admin && adduser -S admin -G admin
 # set work directory
 
 
-RUN mkdir -p $MICRO_SERVICE
-RUN mkdir -p $MICRO_SERVICE/static
+RUN mkdir -p $ROBOPROP_CLIENT
+RUN mkdir -p $ROBOPROP_CLIENT/static
 
 # where the code lives
-WORKDIR $MICRO_SERVICE
+WORKDIR $ROBOPROP_CLIENT
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1

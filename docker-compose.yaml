@@ -4,9 +4,9 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - 1300:80
+      - 80:80
     volumes:
-      - static_volume:/home/app/microservice/static
+      - static_volume:/home/app/roboprop/static
     depends_on:
       - web
     restart: "on-failure"
@@ -17,8 +17,8 @@ services:
                     npx tailwindcss -i ./static/src/input.css -o ./static/src/output.css &&
                     gunicorn roboprop.wsgi:application --bind 0.0.0.0:8000"
     volumes:
-      - .:/microservice:rw # map data and files from parent directory in host to microservice directory in docker containe
-      - static_volume:/home/app/microservice/static
+      - .:/roboprop:rw # map data and files from parent directory in host to roboprop directory in docker container
+      - static_volume:/home/app/roboprop/static
     env_file:
       - .env
     image: roboprop
@@ -26,8 +26,6 @@ services:
     expose:
       - 8000
     restart: "on-failure"
-
-
 
 volumes:
   static_volume:

@@ -246,7 +246,7 @@ class SearchAndCacheTestCase(TestCase):
         )
         mock_search_external_library.assert_any_call(
             "https://www.blenderkit.com/api/v1/search/?query=search+text:test+asset_type:model+order:_score+is_free:False&page=1",
-            "blendkit",
+            "blenderkit",
         )
 
         # Check that the search results were cached
@@ -254,7 +254,7 @@ class SearchAndCacheTestCase(TestCase):
         cached_results = cache.get(cache_key)
         self.assertIsNotNone(cached_results)
         self.assertEqual(cached_results["fuel"], {"result": "mocked"})
-        self.assertEqual(cached_results["blendkit"], {"result": "mocked"})
+        self.assertEqual(cached_results["blenderkit"], {"result": "mocked"})
 
         # Check that the function returned the cached results
         self.assertEqual(search_results, cached_results)
@@ -309,22 +309,22 @@ class AddToMyModelsTestCase(TestCase):
             },
         )
 
-    @patch("roboprop_client.views._add_blendkit_model_to_my_models")
-    def test_add_blendkit_model_to_my_models(
-        self, mock_add_blendkit_model_to_my_models
+    @patch("roboprop_client.views._add_blenderkit_model_to_my_models")
+    def test_add_blenderkit_model_to_my_models(
+        self, mock_add_blenderkit_model_to_my_models
     ):
-        mock_add_blendkit_model_to_my_models.return_value = Mock(status_code=400)
+        mock_add_blenderkit_model_to_my_models.return_value = Mock(status_code=400)
         response = self.client.post(
             "/add-to-my-models/",
             {
                 "name": "test_model",
-                "library": "blendkit",
+                "library": "blenderkit",
                 "assetBaseId": "test_asset_base_id",
                 "thumbnail": "test_thumbnail",
             },
         )
         # Confirm correct arguments
-        mock_add_blendkit_model_to_my_models.assert_called_once_with(
+        mock_add_blenderkit_model_to_my_models.assert_called_once_with(
             "Test_model", "test_asset_base_id", "test_thumbnail"
         )
 

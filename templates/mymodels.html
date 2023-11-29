@@ -7,8 +7,8 @@
     {% include "components/_message_block.html" %}
     <div class="flex space-x-4">
         {% include "components/_upload_modal.html" %}
-        <button class="block text-white bg-action/80 hover:bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="button" onClick="updateBlendkitModels()">
-            Update Blendkit Models
+        <button class="block text-white bg-action/80 hover:bg-action focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="button" onClick="updateBlenderkitModels()">
+            Update Blenderkit Models
         </button>
     </div>
     {% include "components/_category_block.html" %}
@@ -48,7 +48,7 @@
       </div>
 
     <script>
-        function updateBlendkitModels() {
+        function updateBlenderkitModels() {
             const notification = document.querySelector('#notification');
             notification.innerHTML = '';
             if (!notification.classList.contains('hidden')) {
@@ -57,13 +57,13 @@
             const data = {
                 csrfmiddlewaretoken: '{{ csrf_token }}',
             };
-            notification.innerHTML = 'Updating Blendkit Models, this may take a while...';
+            notification.innerHTML = 'Updating Blenderkit Models, this may take a while...';
             notification.classList.remove('hidden');
             notification.classList.add('bg-blue-500/80');
             notification.classList.remove('bg-green-500/80');
             notification.classList.remove('bg-red-500/80');
             $.ajax({
-                url: '/update-models-from-blendkit/',
+                url: '/update-models-from-blenderkit/',
                 type: 'POST',
                 data: data,
                 success: function(response) {

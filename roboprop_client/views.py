@@ -84,7 +84,7 @@ def _get_model_configuration(model):
 def _search_external_library(query, library):
     response = requests.get(query)
     search_results = (
-        response.json()["results"] if library == "blendkit" else response.json()
+        response.json()["results"] if library == "blenderkit" else response.json()
     )
     return search_results
 
@@ -93,7 +93,7 @@ def _search_and_cache(search):
     # Check if the results are already cached
     cache_key = f"search_results_{search}"
     search_results = cache.get(cache_key)
-    blendkit_free = False if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else True
+    blenderkit_free = False if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else True
 
     # i.e if there is no cache
     if not search_results:
@@ -101,9 +101,9 @@ def _search_and_cache(search):
             "fuel": _search_external_library(
                 f"https://fuel.gazebosim.org/1.0/models?q={search}", "fuel"
             ),
-            "blendkit": _search_external_library(
-                f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:{blendkit_free}&page=1",
-                "blendkit",
+            "blenderkit": _search_external_library(
+                f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:{blenderkit_free}&page=1",
+                "blenderkit",
             ),
         }
         # Cache the results for 5 minutes
@@ -169,7 +169,7 @@ def _get_suggested_tags(thumbnails):
     return tags, categories, colors
 
 
-def _get_blendkit_metadata(folder_name):
+def _get_blenderkit_metadata(folder_name):
     tags = []
     categories = []
     description = []
@@ -178,14 +178,14 @@ def _get_blendkit_metadata(folder_name):
     if response.status_code == 200:
         metadata = response.json()
         tags = metadata.get("tags", [])
-        # Blendkit has only one category per model, but this
+        # Blenderkit has only one category per model, but this
         # is a list for consistency
         categories = [metadata.get("category", "").strip()]
         description = metadata.get("description", "")
     return tags, categories, description
 
 
-def _get_blendkit_model_details(result):
+def _get_blenderkit_model_details(result):
     return {
         "name": result["name"],
         "thumbnail": result["thumbnailMiddleUrl"],
@@ -212,7 +212,7 @@ def _add_fuel_model_to_my_models(name, owner):
     return response
 
 
-def _add_blendkit_thumbnail(thumbnail, folder_name):
+def _add_blenderkit_thumbnail(thumbnail, folder_name):
     thumbnail_response = requests.get(thumbnail)
     os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
     thumbnail_filename = os.path.basename(thumbnail)
@@ -225,10 +225,10 @@ def _add_blendkit_thumbnail(thumbnail, folder_name):
         thumbnail_file.write(thumbnail_response.content)
 
 
-def _add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
+def _add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     load_blenderkit_model(asset_base_id, "models", folder_name)
 
-    _add_blendkit_thumbnail(thumbnail, folder_name)
+    _add_blenderkit_thumbnail(thumbnail, folder_name)
     zip_filename, zip_path = utils.create_zip_file(folder_name)
     # Upload the ZIP file in a POST request
     with open(zip_path, "rb") as zip_file:
@@ -274,14 +274,14 @@ def _update_index(request, model_name, model_metadata, model_source):
     return response
 
 
-def _add_blendkit_model_metadata(request, folder_name):
-    tags, categories, description = _get_blendkit_metadata(folder_name)
+def _add_blenderkit_model_metadata(request, folder_name):
+    tags, categories, description = _get_blenderkit_metadata(folder_name)
     metadata = {
         "tags": tags,
         "categories": categories,
         "description": description,
     }
-    source = "Blendkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blendkit"
+    source = "Blenderkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
     response = _update_index(request, folder_name, metadata, source)
     return response
 
@@ -454,7 +454,7 @@ def find_models(request):
     search = request.GET.get("search", "")
     blenderkit_id = request.GET.get("add-directly", "")
     fuel_models = []
-    blendkit_models = []
+    blenderkit_models = []
 
     if search:
         search_results = _search_and_cache(search)
@@ -463,21 +463,21 @@ def find_models(request):
             fuel_model_details = _get_fuel_model_details(result)
             fuel_models.append(fuel_model_details)
 
-        for result in search_results["blendkit"]:
-            blendkit_model_details = _get_blendkit_model_details(result)
-            blendkit_models.append(blendkit_model_details)
+        for result in search_results["blenderkit"]:
+            blenderkit_model_details = _get_blenderkit_model_details(result)
+            blenderkit_models.append(blenderkit_model_details)
     elif blenderkit_id:
         result = requests.get(
             f"https://www.blenderkit.com/api/v1/search/?query=asset_base_id:{blenderkit_id}"
         )
         data = result.json()["results"][0]
-        blendkit_model_details = _get_blendkit_model_details(data)
-        blendkit_models.append(blendkit_model_details)
+        blenderkit_model_details = _get_blenderkit_model_details(data)
+        blenderkit_models.append(blenderkit_model_details)
 
     context = {
         "search": search,
         "fuel_models": fuel_models,
-        "blendkit_models": blendkit_models,
+        "blenderkit_models": blenderkit_models,
     }
     return render(request, "find-models.html", context=context)
 
@@ -490,20 +490,20 @@ def add_to_my_models(request):
             owner = request.POST.get("owner")
             description = request.POST.get("description")
             response = _add_fuel_model_to_my_models(name, owner)
-        elif library == "blendkit":
+        elif library == "blenderkit":
             thumbnail = request.POST.get("thumbnail")
             asset_base_id = request.POST.get("assetBaseId")
             folder_name = utils.capitalize_and_remove_spaces(name)
             try:
-                response = _add_blendkit_model_to_my_models(
+                response = _add_blenderkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )
             except ValueError as e:
                 return JsonResponse({"error": str(e)}, status=500)
         metadata_response = None
         # If model upload succeeds, add metadata
-        if response.status_code == 201 and library == "blendkit":
-            metadata_response = _add_blendkit_model_metadata(request, folder_name)
+        if response.status_code == 201 and library == "blenderkit":
+            metadata_response = _add_blenderkit_model_metadata(request, folder_name)
         elif response.status_code == 201 and library == "fuel":
             metadata_response = _add_fuel_model_metadata(request, name, description)
         else:
@@ -599,24 +599,24 @@ def add_metadata(request, name):
         return redirect("mymodels")
 
 
-def update_models_from_blendkit(request):
+def update_models_from_blenderkit(request):
     if request.method == "POST":
         # get index.json
         index = _check_and_get_index(request)
         for model in index:
-            # check if model has key assetBaseId, i.e is from blendkit
+            # check if model has key assetBaseId, i.e is from blenderkit
             if "assetBaseId" in index[model]:
                 asset_base_id = index[model]["assetBaseId"]
                 folder_name = model
                 # We get again the original thumbnail url (even if though we have it) as
-                # this means we can reuse the original blendkit conversion logic when first uploading
+                # this means we can reuse the original blenderkit conversion logic when first uploading
                 # to Roboprop
                 response = utils.make_get_request(
                     "models/" + folder_name + "/blenderkit_meta.json"
                 )
                 metadata = json.loads(response.content)
                 thumbnail = metadata["thumbnailMiddleUrl"]
-                response = _add_blendkit_model_to_my_models(
+                response = _add_blenderkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )
                 if response.status_code != 201:
@@ -627,7 +627,7 @@ def update_models_from_blendkit(request):
         response = utils.make_put_request("index.json", data=json.dumps(index))
         if response.status_code == 201:
             return JsonResponse(
-                {"message": f"Success: All models from blendkit updated"}, status=201
+                {"message": f"Success: All models from blenderkit updated"}, status=201
             )
         else:
             return JsonResponse(

@@ -16,8 +16,8 @@ urlpatterns = [
     path("settings/", views.user_settings, name="user_settings"),
     path("add-metadata/<str:name>/", views.add_metadata, name="add_metadata"),
     path(
-        "update-models-from-blendkit/",
-        views.update_models_from_blendkit,
-        name="update_models_from_blendkit",
+        "update-models-from-blenderkit/",
+        views.update_models_from_blenderkit,
+        name="update_models_from_blenderkit",
     ),
 ]

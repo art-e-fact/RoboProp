@@ -274,12 +274,13 @@ def _update_index(request, model_name, model_metadata, model_source):
     return response
 
 
-def _add_blenderkit_model_metadata(request, folder_name):
+def _add_blenderkit_model_metadata(request, folder_name, asset_base_id):
     tags, categories, description = _get_blenderkit_metadata(folder_name)
     metadata = {
         "tags": tags,
         "categories": categories,
         "description": description,
+        "assetBaseId": asset_base_id,
     }
     source = "Blenderkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
     response = _update_index(request, folder_name, metadata, source)
@@ -503,7 +504,9 @@ def add_to_my_models(request):
         metadata_response = None
         # If model upload succeeds, add metadata
         if response.status_code == 201 and library == "blenderkit":
-            metadata_response = _add_blenderkit_model_metadata(request, folder_name)
+            metadata_response = _add_blenderkit_model_metadata(
+                request, folder_name, asset_base_id
+            )
         elif response.status_code == 201 and library == "fuel":
             metadata_response = _add_fuel_model_metadata(request, name, description)
         else:
@@ -608,14 +611,12 @@ def update_models_from_blenderkit(request):
             if "assetBaseId" in index[model]:
                 asset_base_id = index[model]["assetBaseId"]
                 folder_name = model
-                # We get again the original thumbnail url (even if though we have it) as
-                # this means we can reuse the original blenderkit conversion logic when first uploading
-                # to Roboprop
-                response = utils.make_get_request(
-                    "models/" + folder_name + "/blenderkit_meta.json"
+                # Get the thumbnail from blenderkit, in case saved ones are lost
+                result = requests.get(
+                    f"https://www.blenderkit.com/api/v1/search/?query=asset_base_id:{asset_base_id}"
                 )
-                metadata = json.loads(response.content)
-                thumbnail = metadata["thumbnailMiddleUrl"]
+                data = result.json()["results"][0]
+                thumbnail = data["thumbnailMiddleUrl"]
                 response = _add_blenderkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )

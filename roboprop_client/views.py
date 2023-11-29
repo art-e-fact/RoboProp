@@ -81,7 +81,7 @@ def _get_model_configuration(model):
     return model_configuration
 
 
-def __search_external_library(query, library):
+def _search_external_library(query, library):
     response = requests.get(query)
     search_results = (
         response.json()["results"] if library == "blendkit" else response.json()
@@ -98,10 +98,10 @@ def _search_and_cache(search):
     # i.e if there is no cache
     if not search_results:
         search_results = {
-            "fuel": __search_external_library(
+            "fuel": _search_external_library(
                 f"https://fuel.gazebosim.org/1.0/models?q={search}", "fuel"
             ),
-            "blendkit": __search_external_library(
+            "blendkit": _search_external_library(
                 f"https://www.blenderkit.com/api/v1/search/?query=search+text:{search}+asset_type:model+order:_score+is_free:{blendkit_free}&page=1",
                 "blendkit",
             ),
@@ -112,7 +112,7 @@ def _search_and_cache(search):
     return search_results
 
 
-def __remove_outliers_and_sort(items):
+def _remove_outliers_and_sort(items):
     # Remove single occurences as is most likely an outlier
     items = [item for item in items if items.count(item) > 1]
     # Sort by most occurences
@@ -122,7 +122,7 @@ def __remove_outliers_and_sort(items):
     return items
 
 
-def __detect_thumbnail_details(thumbnail):
+def _detect_thumbnail_details(thumbnail):
     client = boto3.client("rekognition")
 
     # Confidence can be tweaked, and a lower value does return
@@ -141,7 +141,7 @@ def __detect_thumbnail_details(thumbnail):
         tags.append(label["Name"])
         categories.append(label["Categories"][0]["Name"])
         if len(label["Parents"]) > 0:
-            # Duplicates handled by __remove_outliers_and_sort()
+            # Duplicates handled by _remove_outliers_and_sort()
             categories.append(label["Parents"][0]["Name"])
 
         if len(label["Instances"]) > 0:
@@ -157,14 +157,14 @@ def _get_suggested_tags(thumbnails):
     colors = []
 
     for thumbnail in thumbnails:
-        t, c, col = __detect_thumbnail_details(thumbnail)
+        t, c, col = _detect_thumbnail_details(thumbnail)
         tags.extend(t)
         categories.extend(c)
         colors.extend(col)
 
-    tags = __remove_outliers_and_sort(tags)
-    categories = __remove_outliers_and_sort(categories)
-    colors = __remove_outliers_and_sort(colors)
+    tags = _remove_outliers_and_sort(tags)
+    categories = _remove_outliers_and_sort(categories)
+    colors = _remove_outliers_and_sort(colors)
 
     return tags, categories, colors
 
@@ -204,7 +204,7 @@ def _get_fuel_model_details(result):
     }
 
 
-def __add_fuel_model_to_my_models(name, owner):
+def _add_fuel_model_to_my_models(name, owner):
     # make a POST Request to our fileserver
     url = f"models/{name}/"
     parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
@@ -212,7 +212,7 @@ def __add_fuel_model_to_my_models(name, owner):
     return response
 
 
-def __add_blendkit_thumbnail(thumbnail, folder_name):
+def _add_blendkit_thumbnail(thumbnail, folder_name):
     thumbnail_response = requests.get(thumbnail)
     os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
     thumbnail_filename = os.path.basename(thumbnail)
@@ -225,10 +225,10 @@ def __add_blendkit_thumbnail(thumbnail, folder_name):
         thumbnail_file.write(thumbnail_response.content)
 
 
-def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
+def _add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     load_blenderkit_model(asset_base_id, "models", folder_name)
 
-    __add_blendkit_thumbnail(thumbnail, folder_name)
+    _add_blendkit_thumbnail(thumbnail, folder_name)
     zip_filename, zip_path = utils.create_zip_file(folder_name)
     # Upload the ZIP file in a POST request
     with open(zip_path, "rb") as zip_file:
@@ -241,7 +241,7 @@ def __add_blendkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     return response
 
 
-def __create_metadata_from_rekognition(name):
+def _create_metadata_from_rekognition(name):
     thumbnails = _get_thumbnails([name], "models", page=1, page_size=1, gallery=False)
     tags, categories, colors = [], [], []
     if all(thumbnail["image"] is not None for thumbnail in thumbnails):
@@ -263,7 +263,7 @@ def _check_and_get_index(request):
     return index
 
 
-def __update_index(request, model_name, model_metadata, model_source):
+def _update_index(request, model_name, model_metadata, model_source):
     index = _check_and_get_index(request)
     url_safe_name = urllib.parse.quote(model_name)
     model_metadata["source"] = model_source
@@ -282,12 +282,12 @@ def _add_blendkit_model_metadata(request, folder_name):
         "description": description,
     }
     source = "Blendkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blendkit"
-    response = __update_index(request, folder_name, metadata, source)
+    response = _update_index(request, folder_name, metadata, source)
     return response
 
 
 def _add_fuel_model_metadata(request, name, description):
-    tags, categories, colors = __create_metadata_from_rekognition(name)
+    tags, categories, colors = _create_metadata_from_rekognition(name)
     metadata = {
         "tags": tags,
         "categories": categories,
@@ -295,11 +295,11 @@ def _add_fuel_model_metadata(request, name, description):
         "description": description,
     }
 
-    response = __update_index(request, name, metadata, "Fuel")
+    response = _update_index(request, name, metadata, "Fuel")
     return response
 
 
-def __get_num_assets(asset_type):
+def _get_num_assets(asset_type):
     assets = _get_assets(f"{asset_type}/")
     if not assets:
         return 0
@@ -405,7 +405,7 @@ def mymodels(request):
         if response.status_code == 201:
             messages.success(request, "Model uploaded successfully")
             model_name = os.path.splitext(file.name)[0]
-            tags, categories, colors = __create_metadata_from_rekognition(model_name)
+            tags, categories, colors = _create_metadata_from_rekognition(model_name)
             request.session["model_meta_data"] = {
                 "name": model_name,
                 "tags": tags,
@@ -417,7 +417,7 @@ def mymodels(request):
             messages.error(request, "Failed to upload model")
             return redirect("mymodels")
 
-    total_num_models = __get_num_assets("models")
+    total_num_models = _get_num_assets("models")
     total_pages = math.ceil(total_num_models / page_size)
     gallery_thumbnails = _get_all_thumbnails("models", page, page_size)
     return render(
@@ -489,13 +489,13 @@ def add_to_my_models(request):
         if library == "fuel":
             owner = request.POST.get("owner")
             description = request.POST.get("description")
-            response = __add_fuel_model_to_my_models(name, owner)
+            response = _add_fuel_model_to_my_models(name, owner)
         elif library == "blendkit":
             thumbnail = request.POST.get("thumbnail")
             asset_base_id = request.POST.get("assetBaseId")
             folder_name = utils.capitalize_and_remove_spaces(name)
             try:
-                response = __add_blendkit_model_to_my_models(
+                response = _add_blendkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )
             except ValueError as e:
@@ -573,7 +573,7 @@ def add_metadata(request, name):
             "colors": colors,
         }
 
-        response = __update_index(request, name, metadata, "Upload")
+        response = _update_index(request, name, metadata, "Upload")
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:
@@ -616,7 +616,7 @@ def update_models_from_blendkit(request):
                 )
                 metadata = json.loads(response.content)
                 thumbnail = metadata["thumbnailMiddleUrl"]
-                response = __add_blendkit_model_to_my_models(
+                response = _add_blendkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )
                 if response.status_code != 201:

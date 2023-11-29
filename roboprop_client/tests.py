@@ -232,7 +232,7 @@ class ViewsTestCase(TestCase):
 
 
 class SearchAndCacheTestCase(TestCase):
-    @patch("roboprop_client.views.__search_external_library")
+    @patch("roboprop_client.views._search_external_library")
     def test_search_and_cache(self, mock_search_external_library):
         # Set up the mock
         mock_search_external_library.return_value = {"result": "mocked"}
@@ -245,7 +245,7 @@ class SearchAndCacheTestCase(TestCase):
             "https://fuel.gazebosim.org/1.0/models?q=test", "fuel"
         )
         mock_search_external_library.assert_any_call(
-            "https://www.blenderkit.com/api/v1/search/?query=search+text:test+asset_type:model+order:_score+is_free:True&page=1",
+            "https://www.blenderkit.com/api/v1/search/?query=search+text:test+asset_type:model+order:_score+is_free:False&page=1",
             "blendkit",
         )
 
@@ -289,7 +289,7 @@ class AddToMyModelsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-    @patch("roboprop_client.views.__add_fuel_model_to_my_models")
+    @patch("roboprop_client.views._add_fuel_model_to_my_models")
     def test_add_fuel_model_to_my_models(self, mock_add_fuel_model_to_my_models):
         mock_add_fuel_model_to_my_models.return_value = Mock(status_code=201)
         response = self.client.post(
@@ -309,7 +309,7 @@ class AddToMyModelsTestCase(TestCase):
             },
         )
 
-    @patch("roboprop_client.views.__add_blendkit_model_to_my_models")
+    @patch("roboprop_client.views._add_blendkit_model_to_my_models")
     def test_add_blendkit_model_to_my_models(
         self, mock_add_blendkit_model_to_my_models
     ):

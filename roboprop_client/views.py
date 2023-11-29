@@ -274,7 +274,7 @@ def _update_index(request, model_name, model_metadata, model_source):
     return response
 
 
-def _add_blendkit_model_metadata(request, folder_name, asset_base_id):
+def _add_blenderkit_model_metadata(request, folder_name, asset_base_id):
     tags, categories, description = _get_blenderkit_metadata(folder_name)
     metadata = {
         "tags": tags,
@@ -504,7 +504,7 @@ def add_to_my_models(request):
         metadata_response = None
         # If model upload succeeds, add metadata
         if response.status_code == 201 and library == "blenderkit":
-            metadata_response = _add_blendkit_model_metadata(
+            metadata_response = _add_blenderkit_model_metadata(
                 request, folder_name, asset_base_id
             )
         elif response.status_code == 201 and library == "fuel":
@@ -617,7 +617,7 @@ def update_models_from_blenderkit(request):
                 )
                 data = result.json()["results"][0]
                 thumbnail = data["thumbnailMiddleUrl"]
-                response = __add_blendkit_model_to_my_models(
+                response = _add_blenderkit_model_to_my_models(
                     folder_name, asset_base_id, thumbnail
                 )
                 if response.status_code != 201:

@@ -47,6 +47,11 @@ def export_sdf(path_model: Path, model_name: str, blend_file_path: str):
                 model, "link", attrib={"name": f"{model_name}_link"}
             )
 
+            link.append(ElementTree.Comment("Convert model orientations from right-handed y-up z-back to ROS"))
+            pose = ElementTree.SubElement(link, "pose")
+            pose.set("degrees", "1")
+            pose.text = "0 0 0 90 0 -90"
+
             visual = ElementTree.SubElement(
                 link, "visual", attrib={"name": f"{model_name}_visual"}
             )

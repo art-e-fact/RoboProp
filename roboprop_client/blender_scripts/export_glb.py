@@ -18,6 +18,7 @@ def _export(blend_file: Path, output: Path, format: str):
         export_format=format,
         export_image_format="JPEG",
         export_jpeg_quality=60,
+        export_extras=True,
     )
 
 def export_glb(blend_file: Path, output: Path):

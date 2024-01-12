@@ -64,14 +64,12 @@ def main():
     )
 
     if args.upload:
-        # Define the directory to be zipped and the output zip file name
         model_folder = Path(args.out) / config.roboprop_key
         zip_file = config.roboprop_key
         shutil.make_archive(zip_file, 'zip', model_folder)
         with open(f"{zip_file}.zip", "rb") as zip_file:
             files = {"files": (zip_file.name, zip_file)}
             url = os.getenv("FILESERVER_URL", "") + f"models/{config.roboprop_key}/" + "?extract=true&clean=true"
-            # At present all files are uploaded as a zip file.
             response = requests.post(
                 url,
                 files=files,

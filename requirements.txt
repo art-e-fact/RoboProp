@@ -6,3 +6,4 @@ xmltodict
 boto3
 gunicorn
 bpy
+pyYAML

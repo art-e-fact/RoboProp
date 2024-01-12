@@ -1,9 +1,14 @@
 import argparse
 from dataclasses import dataclass
 import yaml
+import os
+import shutil
+import requests
 from pathlib import Path
+from dotenv import load_dotenv
 from roboprop_client.export_model import export_sdf
 
+load_dotenv()
 
 @dataclass
 class Config:
@@ -58,8 +63,24 @@ def main():
         blend_file_path=roboprop_file.parent / config.blend_file,
     )
 
-    # TODO: upload to RoboProp
-
+    if args.upload:
+        # Define the directory to be zipped and the output zip file name
+        model_folder = Path(args.out) / config.roboprop_key
+        zip_file = config.roboprop_key
+        shutil.make_archive(zip_file, 'zip', model_folder)
+        with open(f"{zip_file}.zip", "rb") as zip_file:
+            files = {"files": (zip_file.name, zip_file)}
+            url = os.getenv("FILESERVER_URL", "") + f"models/{config.roboprop_key}/" + "?extract=true&clean=true"
+            # At present all files are uploaded as a zip file.
+            response = requests.post(
+                url,
+                files=files,
+                headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "") },
+                timeout=60,
+            )
+    
+        if response.status_code == 201:
+            print(f"{config.roboprop_key} uploaded successfully")
 
 if __name__ == "__main__":
     main()

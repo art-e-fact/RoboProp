@@ -19,6 +19,10 @@ def _export(blend_file: Path, output: Path, format: str):
         export_image_format="JPEG",
         export_jpeg_quality=60,
         export_extras=True,
+        # the export rigged models in pos, export_def_bones=True and export_rest_position_armature=False are needed
+        export_rest_position_armature=False,
+        # export_hierarchy_flatten_bones=True,
+        export_def_bones=True,
     )
 
 def export_glb(blend_file: Path, output: Path):

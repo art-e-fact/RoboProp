@@ -5,3 +5,4 @@ requests
 xmltodict
 boto3
 gunicorn
+bpy

@@ -360,6 +360,8 @@ def login(request):
 
 def logout(request):
     auth.logout(request)
+    if "session_token" in request.session:
+        del request.session["session_token"]
     return redirect("login")
 
 

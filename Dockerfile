@@ -1,4 +1,4 @@
-FROM python:3.9.13-alpine
+FROM python:3.10.11-alpine
 
 ENV ROBOPROP_CLIENT=/home/app/roboprop
 RUN addgroup -S admin && adduser -S admin -G admin

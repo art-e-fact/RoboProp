@@ -12,8 +12,6 @@ urlpatterns = [
     path("mymodels/<str:name>/", views.mymodel_detail, name="mymodel_detail"),
     path("myrobots/", views.myrobots, name="myrobots"),
     path("myrobots/<str:name>/", views.myrobot_detail, name="myrobot_detail"),
-    path("register", views.register, name="register"),
-    path("settings/", views.user_settings, name="user_settings"),
     path("add-metadata/<str:name>/", views.add_metadata, name="add_metadata"),
     path(
         "update-models-from-blenderkit/",

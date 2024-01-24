@@ -14,11 +14,21 @@ from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
 from django.contrib import auth
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from roboprop_client.load_blenderkit import load_blenderkit_model
 import roboprop_client.utils as utils
+
+
+# We use a custom decorator as user login is through DreamFactory, not Django
+def login_required(view_func):
+    def _wrapped_view_func(request, *args, **kwargs):
+        if "session_token" not in request.session:
+            messages.error(request, "You need to be logged in to access this page.")
+            return redirect("login")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped_view_func
 
 
 def _get_assets(url):
@@ -332,7 +342,6 @@ def _login_to_fileserver(username, password):
 def home(request):
     if request.user.id is None:
         return redirect("login")
-
     return render(request, "home.html")
 
 
@@ -358,6 +367,7 @@ def login(request):
     return render(request, "login.html")
 
 
+@login_required
 def logout(request):
     auth.logout(request)
     if "session_token" in request.session:
@@ -365,6 +375,7 @@ def logout(request):
     return redirect("login")
 
 
+@login_required
 def mymodels(request):
     page = int(request.GET.get("page", 1))
     page_size = int(request.GET.get("page_size", 12))
@@ -402,6 +413,7 @@ def mymodels(request):
     )
 
 
+@login_required
 def mymodel_detail(request, name):
     model_details = {
         "name": name,
@@ -418,6 +430,7 @@ def mymodel_detail(request, name):
     return render(request, "mymodel_detail.html", {"asset": model_details})
 
 
+@login_required
 def find_models(request):
     # Check if there is a search query via GET
     search = request.GET.get("search", "")
@@ -451,6 +464,7 @@ def find_models(request):
     return render(request, "find-models.html", context=context)
 
 
+@login_required
 def add_to_my_models(request):
     if request.method == "POST":
         name = request.POST.get("name")
@@ -492,6 +506,7 @@ def add_to_my_models(request):
         return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
+@login_required
 def myrobots(request):
     if request.method == "POST":
         response = utils.upload_file(request.FILES["file"], "robots")
@@ -504,6 +519,7 @@ def myrobots(request):
     return render(request, "myrobots.html", {"thumbnails": gallery_thumbnails})
 
 
+@login_required
 def myrobot_detail(request, name):
     robot_details = {
         "name": name,
@@ -518,6 +534,7 @@ def myrobot_detail(request, name):
     return render(request, "myrobot_detail.html", {"asset": robot_details})
 
 
+@login_required
 def add_metadata(request, name):
     if request.method == "POST":
         # Tags etc. that the user has selected based on
@@ -570,6 +587,7 @@ def add_metadata(request, name):
         return redirect("mymodels")
 
 
+@login_required
 def update_models_from_blenderkit(request):
     if request.method == "POST":
         # get index.json

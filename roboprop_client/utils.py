@@ -25,7 +25,9 @@ def make_put_request(url, data):
     return response
 
 
-def make_post_request(url, parameters="?extract=true&clean=true", files=None):
+def make_post_request(
+    url, parameters="?extract=true&clean=true", files=None, json=None
+):
     url = FILESERVER_URL + url + parameters
     if files:
         # At present all files are uploaded as a zip file.
@@ -35,12 +37,17 @@ def make_post_request(url, parameters="?extract=true&clean=true", files=None):
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
             timeout=60,
         )
+    elif json:
+        response = requests.post(
+            url,
+            headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
+            json=json,
+        )
     else:
         response = requests.post(
             url,
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
         )
-
     return response
 
 

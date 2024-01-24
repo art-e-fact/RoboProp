@@ -40,7 +40,7 @@ def _get_thumbnails(assets, asset_type, page=1, page_size=12, gallery=True):
     assets = assets[start_index:end_index]
     thumbnails = []
     for asset in assets:
-        url = f"{asset_type}/{asset}/thumbnails/"
+        url = f"files/{asset_type}/{asset}/thumbnails/"
         response = utils.make_get_request(url)
         if response.status_code == 200:
             thumbnail_data = response.json()["resource"]
@@ -48,7 +48,7 @@ def _get_thumbnails(assets, asset_type, page=1, page_size=12, gallery=True):
                 # Just one thumbnail for each in mymodels.html
                 thumbnail_data = thumbnail_data[0:1]
             for data in thumbnail_data:
-                url = f"{data['path']}?is_base64=true"
+                url = f"files/{data['path']}?is_base64=true"
                 response = utils.make_get_request(url)
                 thumbnail = base64.b64encode(response.content).decode("utf-8")
                 thumbnails.append({"name": asset, "image": thumbnail})
@@ -59,7 +59,7 @@ def _get_thumbnails(assets, asset_type, page=1, page_size=12, gallery=True):
 
 
 def _get_all_thumbnails(asset_type, page=1, page_size=12):
-    assets = _get_assets(f"{asset_type}/")
+    assets = _get_assets(f"files/{asset_type}/")
     if not assets:
         return []
     thumbnails = _get_thumbnails(assets, asset_type, page, page_size)
@@ -67,7 +67,7 @@ def _get_all_thumbnails(asset_type, page=1, page_size=12):
 
 
 def _get_model_configuration(model):
-    url = f"models/{model}/model.config"
+    url = f"files/models/{model}/model.config"
     response = utils.make_get_request(url)
     response.raise_for_status()
     xml_string = response.content.decode("utf-8")
@@ -173,7 +173,7 @@ def _get_blenderkit_metadata(folder_name):
     tags = []
     categories = []
     description = []
-    url = f"models/{folder_name}/blenderkit_meta.json"
+    url = f"files/models/{folder_name}/blenderkit_meta.json"
     response = utils.make_get_request(url)
     if response.status_code == 200:
         metadata = response.json()
@@ -206,7 +206,7 @@ def _get_fuel_model_details(result):
 
 def _add_fuel_model_to_my_models(name, owner):
     # make a POST Request to our fileserver
-    url = f"models/{name}/"
+    url = f"files/models/{name}/"
     parameters = f"?url=https://fuel.gazebosim.org/1.0/{owner}/models/{name}.zip&extract=true&clean=true"
     response = utils.make_post_request(url, parameters=parameters)
     return response
@@ -234,7 +234,7 @@ def _add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     with open(zip_path, "rb") as zip_file:
         files = {"files": (zip_filename, zip_file)}
         asset_name = os.path.splitext(zip_filename)[0]
-        url = f"models/{asset_name}/"
+        url = f"files/models/{asset_name}/"
         response = utils.make_post_request(url, files=files)
 
     utils.delete_folders(["models", "textures"])
@@ -251,7 +251,7 @@ def _create_metadata_from_rekognition(name):
 
 
 def _check_and_get_index(request):
-    response = utils.make_get_request("index.json")
+    response = utils.make_get_request("files/index.json")
     if response.status_code == 200:
         # Convert the JSON response to a dictionary
         index = json.loads(response.content)
@@ -268,9 +268,11 @@ def _update_index(request, model_name, model_metadata, model_source):
     url_safe_name = urllib.parse.quote(model_name)
     model_metadata["source"] = model_source
     model_metadata["scale"] = 1.0
-    model_metadata["url"] = utils.FILESERVER_URL + f"models/{url_safe_name}/?zip=true"
+    model_metadata["url"] = (
+        utils.FILESERVER_URL + f"files/models/{url_safe_name}/?zip=true"
+    )
     index[model_name] = model_metadata
-    response = utils.make_put_request("index.json", data=json.dumps(index))
+    response = utils.make_put_request("files/index.json", data=json.dumps(index))
     return response
 
 
@@ -301,10 +303,27 @@ def _add_fuel_model_metadata(request, name, description):
 
 
 def _get_num_assets(asset_type):
-    assets = _get_assets(f"{asset_type}/")
+    assets = _get_assets(f"files/{asset_type}/")
     if not assets:
         return 0
     return len(assets)
+
+
+def _login_to_fileserver(username, password):
+    user_url = "user/session"
+    admin_url = "system/admin/session"
+    login_credentials = {"email": username, "password": password, "remember_me": False}
+    user_response = utils.make_post_request(user_url, json=login_credentials)
+    if user_response.status_code == 200:
+        session_token = user_response.json()["session_token"]
+        return session_token, True
+    elif user_response.status_code == 401:
+        admin_response = utils.make_post_request(admin_url, json=login_credentials)
+        if admin_response.status_code == 200:
+            session_token = admin_response.json()["session_token"]
+            return session_token, True
+    else:
+        return None
 
 
 """VIEWS"""
@@ -321,10 +340,18 @@ def login(request):
     if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
-        user = auth.authenticate(request, username=username, password=password)
-        if user is not None:
-            auth.login(request, user)
-            return redirect("home")
+        result = _login_to_fileserver(username, password)
+        if result is not None:
+            session_token, success = result
+            if success:
+                user, created = User.objects.get_or_create(username=username)
+                if created:
+                    # Prevents login via Django's authentication system
+                    user.set_unusable_password()
+                    user.save()
+                auth.login(request, user)
+                request.session["session_token"] = session_token
+                return redirect("home")
         else:
             messages.error(request, "Invalid credentials")
             return render(request, "login.html")
@@ -625,7 +652,7 @@ def update_models_from_blenderkit(request):
                         {"error": f"Update Failed"}, status=response.status_code
                     )
         # reupload index.json
-        response = utils.make_put_request("index.json", data=json.dumps(index))
+        response = utils.make_put_request("files/index.json", data=json.dumps(index))
         if response.status_code == 201:
             return JsonResponse(
                 {"message": f"Success: All models from blenderkit updated"}, status=201

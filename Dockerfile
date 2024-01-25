@@ -11,7 +11,7 @@ WORKDIR $ROBOPROP_CLIENT
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install psycopg2 dependencies
+# Install psycopg2 dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential postgresql gcc \
     && apt-get remove -y build-essential \

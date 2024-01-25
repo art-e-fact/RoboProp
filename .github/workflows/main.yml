@@ -30,7 +30,7 @@ jobs:
     with:
       tag: ${{needs.bump_version.outputs.version}}
       environment: production
-      repository_name: application/${{ github.event.repository.name }}
+      repository_name: application/roboprop
     secrets:
       gitops_repo_pat: ${{ secrets.GITOPS_REPO_PAT }}
     needs: [build, bump_version]

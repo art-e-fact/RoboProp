@@ -1,0 +1,24 @@
+name: Run tests
+
+on: 
+  workflow_call:
+ 
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+
+    steps:
+      # Checkout repository under $GITHUB_WORKSPACE, so our jobs can access it.
+      - uses: actions/checkout@v3
+
+      # Steps of deploy_dev
+      - name: Set Up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Run Test
+        run:  echo "Todo"

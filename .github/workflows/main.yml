@@ -2,7 +2,10 @@
 name: Build and deploy release
 
 on: 
-  push:
+  push: 
+    branches:
+      - dev
+      - main
 
 jobs:
   test:

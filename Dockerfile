@@ -1,9 +1,8 @@
-FROM python:3.10.11-alpine
+FROM --platform=linux/amd64 python:3.10-slim-bookworm
 
 ENV ROBOPROP_CLIENT=/home/app/roboprop
-RUN addgroup -S admin && adduser -S admin -G admin
+RUN groupadd admin && useradd -m -g admin admin
 # set work directory
-
 
 RUN mkdir -p $ROBOPROP_CLIENT
 RUN mkdir -p $ROBOPROP_CLIENT/static
@@ -16,14 +15,12 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install psycopg2 dependencies
-RUN apk update \
-    && apk add --virtual build-deps gcc python3-dev musl-dev \
-    && apk add postgresql-dev gcc python3-dev musl-dev \
-    && apk del build-deps \
-    && apk --no-cache add musl-dev linux-headers g++
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential postgresql gcc \
+    && apt-get remove -y build-essential \
+    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm
 
-RUN apk add --update nodejs npm
-# install dependencies
+# install depenencies
 RUN pip install --upgrade pip
 # copy project
 COPY . $ROBOPROP_CLIENT

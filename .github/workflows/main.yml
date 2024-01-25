@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/callable_dockerbuild.yml
     with:
       version: ${{needs.bump_version.outputs.version}}
-      repository_name: application/${{ github.event.repository.name }}
+      repository_name: application/roboprop
     secrets:
       access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

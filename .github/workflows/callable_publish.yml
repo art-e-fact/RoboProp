@@ -1,0 +1,53 @@
+name: "CD: Publish docker images in gitops(update version number)"
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      repository_name:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+    secrets:
+      gitops_repo_pat:
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout gitops
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.gitops_repo_pat }}
+          repository: art-e-fact/gitops
+          ref: main
+
+      - name: Update image tag
+        run: find . -type f -wholename "**/${{ inputs.environment }}/**" -exec sed -i "s&${{ inputs.repository_name }}:[a-zA-Z0-9.]*&${{ inputs.repository_name }}:${{ inputs.tag }}&g" {} +
+
+      - name: "Debug: Show changes to the repo"
+        run: git status
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.gitops_repo_pat }}
+          # Branches will be unique
+          branch-suffix: short-commit-hash
+          commit-message: bump docker image for ${{ github.event.repository.name }} to ${{ inputs.tag }}
+          title: "Update ${{ github.event.repository.name }} (environment: ${{ inputs.environment }}) to ${{ inputs.tag }}"
+          body: |
+            ️⚠️**Automatically generated**⚠️
+            The docker container for version `${{ inputs.tag }}` of ${{ github.event.repository.name}} was successfully built - this PR deploys it to ${{ inputs.environment }}.
+
+            ## More details
+            * Repository: ${{ github.server_url }}/${{ github.repository }}
+            * Commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+            * Github Action run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          branch: ${{ github.event.repository.name}}-bump
+          team-reviewers: "${{ (inputs.environment != 'development' && 'infra') || ''}}"

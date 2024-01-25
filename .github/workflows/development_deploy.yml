@@ -8,10 +8,10 @@ jobs:
   test:
     uses: ./.github/workflows/callable_ci.yml
   bump_version:
-    uses: art-e-fact/reusable-gha-workflows/.github/workflows/callable_bump_described_version.yml@main
+    uses: ./.github/workflows/callable_bump_described_version.yml
     needs: [test]
   build:
-    uses: art-e-fact/reusable-gha-workflows/.github/workflows/callable_dockerbuild.yml@main
+    uses: ./.github/workflows/callable_dockerbuild.yml
     with:
       version: ${{needs.bump_version.outputs.version}}
       repository_name: application/${{ github.event.repository.name }}
@@ -21,7 +21,7 @@ jobs:
       aws_region: ${{ secrets.AWS_REGION }}
     needs: [bump_version]
   publish:
-    uses: art-e-fact/reusable-gha-workflows/.github/workflows/callable_publish.yml@main
+    uses: ./.github/workflows/callable_publish.yml
     with:
       tag: ${{needs.bump_version.outputs.version}}
       environment: development

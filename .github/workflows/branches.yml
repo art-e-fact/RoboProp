@@ -1,0 +1,11 @@
+# Ran whenever there is a push/merge to a branch other than main
+name: Test
+
+on: 
+  push:
+    branches-ignore:
+    - main
+
+jobs:
+  test:
+    uses: ./.github/workflows/callable_ci.yml

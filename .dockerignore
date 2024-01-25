@@ -1,0 +1,7 @@
+venv
+node_modules
+.cache
+.pytest_cache
+.python-version
+db.sqlite3
+static/CACHE

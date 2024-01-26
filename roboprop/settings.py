@@ -79,7 +79,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "roboprop.wsgi.application"
 
-CSRF_TRUSTED_ORIGINS = ["http://roboprop", "http://localhost", "http://127.0.0.0"]
+CSRF_TRUSTED_ORIGINS = ["https://roboprop-dev.artefacts.com", "http://localhost", "http://127.0.0.0"]
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

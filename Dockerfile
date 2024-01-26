@@ -21,3 +21,10 @@ RUN pip install --upgrade pip
 COPY . $ROBOPROP_CLIENT
 RUN npm install
 RUN pip install -r requirements.txt
+
+RUN python manage.py makemigrations && \
+    python manage.py migrate && \
+    npx tailwindcss -i static/src/input.css -o static/src/output.css
+
+EXPOSE 8000
+CMD [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]

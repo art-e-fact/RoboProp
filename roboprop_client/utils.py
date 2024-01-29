@@ -60,6 +60,22 @@ def make_post_request(
     return response
 
 
+def make_delete_request(url, session_token=None):
+    url = FILESERVER_URL + url
+    if session_token:
+        return requests.delete(
+            url,
+            headers={
+                FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE,
+                "X-DreamFactory-Session-Token": session_token,
+            },
+        )
+    else:
+        return requests.delete(
+            url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE}
+        )
+
+
 def upload_file(file, asset_type):
     files = {"files": (file.name, file.read())}
     asset_name = os.path.splitext(file.name)[0]

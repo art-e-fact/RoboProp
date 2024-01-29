@@ -10,9 +10,18 @@ BLENDERKIT_PRO_API_KEY = os.getenv("BLENDERKIT_PRO_API_KEY", "")
 
 
 # FILESERVER REQUESTS
-def make_get_request(url):
+def make_get_request(url, session_token=None):
     url = FILESERVER_URL + url
-    return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
+    if session_token:
+        return requests.get(
+            url,
+            headers={
+                FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE,
+                "X-DreamFactory-Session-Token": session_token,
+            },
+        )
+    else:
+        return requests.get(url, headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE})
 
 
 def make_put_request(url, data):

@@ -4,7 +4,6 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from roboprop_client.views import (
     _get_assets,

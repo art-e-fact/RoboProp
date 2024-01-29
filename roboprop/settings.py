@@ -141,5 +141,7 @@ STATICFILES_FINDERS = ("compressor.finders.CompressorFinder",)
 
 LOGIN_URL = "/login"
 
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB

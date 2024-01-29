@@ -13,7 +13,6 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
 from django.contrib import auth
-from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from roboprop_client.load_blenderkit import load_blenderkit_model
@@ -326,12 +325,14 @@ def _login_to_fileserver(username, password):
     user_response = utils.make_post_request(user_url, json=login_credentials)
     if user_response.status_code == 200:
         session_token = user_response.json()["session_token"]
-        return session_token, True
+        is_admin = False
+        return session_token, is_admin, True
     elif user_response.status_code == 401:
         admin_response = utils.make_post_request(admin_url, json=login_credentials)
         if admin_response.status_code == 200:
             session_token = admin_response.json()["session_token"]
-            return session_token, True
+            is_admin = True
+            return session_token, is_admin, True
     else:
         return None
 
@@ -349,15 +350,10 @@ def login(request):
         password = request.POST["password"]
         result = _login_to_fileserver(username, password)
         if result is not None:
-            session_token, success = result
+            session_token, is_admin, success = result
             if success:
-                user, created = User.objects.get_or_create(username=username)
-                if created:
-                    # Prevents login via Django's authentication system
-                    user.set_unusable_password()
-                    user.save()
-                auth.login(request, user)
                 request.session["session_token"] = session_token
+                request.session["admin"] = is_admin
                 return redirect("home")
         else:
             messages.error(request, "Invalid credentials")

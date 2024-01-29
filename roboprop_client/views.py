@@ -338,8 +338,9 @@ def _login_to_fileserver(username, password):
 
 """VIEWS"""
 
-@login_required
 def home(request):
+    if request.user.id is None:
+        return redirect("login")
     return render(request, "home.html")
 
 

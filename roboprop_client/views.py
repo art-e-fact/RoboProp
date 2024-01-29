@@ -22,10 +22,16 @@ import roboprop_client.utils as utils
 # We use a custom decorator as user login is through DreamFactory, not Django
 def login_required(view_func):
     def _wrapped_view_func(request, *args, **kwargs):
-        if "session_token" not in request.session:
-            messages.error(request, "You need to be logged in to access this page.")
-            return redirect("login")
-        return view_func(request, *args, **kwargs)
+        if "session_token" in request.session:
+            # check if session token is valid
+            response = utils.make_get_request(
+                "user/session", request.session["session_token"]
+            )
+            if response.status_code == 200:
+                return view_func(request, *args, **kwargs)
+
+        messages.error(request, "You need to be logged in to access this page.")
+        return redirect("login")
 
     return _wrapped_view_func
 
@@ -338,6 +344,7 @@ def _login_to_fileserver(username, password):
 
 
 """VIEWS"""
+
 
 @login_required
 def home(request):

@@ -370,10 +370,16 @@ def login(request):
 
 @login_required
 def logout(request):
-    auth.logout(request)
-    if "session_token" in request.session:
+    url = "system/admin/session" if request.session["admin"] == True else "user/session"
+    response = utils.make_delete_request(url, request.session["session_token"])
+    if response.status_code == 200:
+        del request.session["admin"]
         del request.session["session_token"]
-    return redirect("login")
+        messages.success(request, "You have been logged out")
+        return redirect("login")
+    else:
+        messages.error(request, "Failed to log out")
+        return redirect("home")
 
 
 @login_required

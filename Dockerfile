@@ -28,4 +28,4 @@ RUN python manage.py makemigrations && \
     npx tailwindcss -i static/src/input.css -o static/src/output.css
 
 EXPOSE 8000
-CMD [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
+CMD [ "gunicorn", "roboprop.wsgi:application", "--bind", "0.0.0.0:8000" ]

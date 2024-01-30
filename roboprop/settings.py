@@ -79,7 +79,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "roboprop.wsgi.application"
 
-CSRF_TRUSTED_ORIGINS = ["https://roboprop-dev.artefacts.com", "http://localhost", "http://127.0.0.0"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://roboprop-dev.artefacts.com",
+    "http://localhost",
+    "http://127.0.0.0",
+]
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -127,6 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -135,9 +140,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 COMPRESS_ROOT = BASE_DIR / "static"
 
+STATICFILES_DIRS = [
+    "static",
+]
+
 COMPRESS_ENABLED = True
 
-STATICFILES_FINDERS = ("compressor.finders.CompressorFinder",)
+STATICFILES_FINDERS = (
+    "compressor.finders.CompressorFinder",
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+)
 
 LOGIN_URL = "/login"
 

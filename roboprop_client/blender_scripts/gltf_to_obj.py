@@ -1,11 +1,12 @@
 import bpy
+
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(
     filepath="/home/azazdeaz/repos/art-e-fact/urdfs/roboprop/BumerangChair/assets/visual.glb",
     files=[{"name": "visual.glb", "name": "visual.glb"}],
     loglevel=50,
 )
-bpy.ops.file.unpack_all(method='WRITE_LOCAL')
+bpy.ops.file.unpack_all(method="WRITE_LOCAL")
 bpy.ops.wm.obj_export(
     filepath="/home/azazdeaz/repos/art-e-fact/urdfs/roboprop/BumerangChair/assets/gen/visual.obj",
     check_existing=False,

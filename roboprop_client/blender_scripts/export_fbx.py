@@ -1,6 +1,7 @@
 import bpy
 from pathlib import Path
 
+
 def export_fbx(blend_file: Path, output: Path):
     # Reset the state of Blender
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -15,6 +16,6 @@ def export_fbx(blend_file: Path, output: Path):
         check_existing=False,
         object_types={"MESH"},
         path_mode="COPY",
-        embed_textures=False, # Gazebo can't handle embedded textures
+        embed_textures=False,  # Gazebo can't handle embedded textures
         apply_scale_options="FBX_SCALE_ALL",
     )

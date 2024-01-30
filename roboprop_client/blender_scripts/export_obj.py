@@ -1,6 +1,7 @@
 import bpy
 from pathlib import Path
 
+
 def export_obj(blend_file: Path, output: Path):
     # Reset the state of Blender
     bpy.ops.wm.read_factory_settings(use_empty=True)

@@ -14,6 +14,7 @@ load_dotenv()
 class Config:
     roboprop_key: str
     blend_file: Path
+    metadata: dict
     # TODO add description and other fields needed for RoboProp models
 
     @classmethod
@@ -21,12 +22,14 @@ class Config:
         with open(path) as f:
             config = yaml.safe_load(f)
             # validate config
+            assert config is not None, "roboprop.yaml is empty"
             assert "roboprop_key" in config, "roboprop_key is missing in roboprop.yaml"
             assert "blend_file" in config, "blend_file is missing in roboprop.yaml"
 
             return Config(
                 roboprop_key=config["roboprop_key"],
                 blend_file=config["blend_file"],
+                metadata=config.get("metadata", {}),
             )
 
 
@@ -40,7 +43,7 @@ def main():
     parser.add_argument(
         "--out",
         type=str,
-        default="/home/azazdeaz/repos/art-e-fact/RoboProp/models",
+        default="./models",
         help="Output path",
     )
     parser.add_argument(

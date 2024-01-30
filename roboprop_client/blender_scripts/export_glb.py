@@ -1,6 +1,7 @@
 import bpy
 from pathlib import Path
 
+
 def _export(blend_file: Path, output: Path, format: str):
     # Reset the state of Blender
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -25,8 +26,10 @@ def _export(blend_file: Path, output: Path, format: str):
         export_def_bones=True,
     )
 
+
 def export_glb(blend_file: Path, output: Path):
     _export(blend_file, output, "GLB")
+
 
 def export_gltf(blend_file: Path, output: Path):
     _export(blend_file, output, "GLTF_SEPARATE")

@@ -4,18 +4,57 @@ import yaml
 import os
 import shutil
 import requests
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 from roboprop_client.export_model import export_sdf
 
 load_dotenv()
 
+
+def _add_model_metadata(config):
+    url = os.getenv("FILESERVER_URL", "") + f"files/index.json"
+    response = requests.get(
+        url,
+        headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
+    )
+    if response.status_code == 200:
+        # Convert the JSON response to a dictionary
+        index = json.loads(response.content)
+
+
+def _upload_model_to_roboprop(args, config):
+    model_folder = Path(args.out) / config.roboprop_key
+    zip_file = config.roboprop_key
+    shutil.make_archive(zip_file, "zip", model_folder)
+    with open(f"{zip_file}.zip", "rb") as zip_file:
+        files = {"files": (zip_file.name, zip_file)}
+        url = (
+            os.getenv("FILESERVER_URL", "")
+            + f"models/{config.roboprop_key}/"
+            + "?extract=true&clean=true"
+        )
+        response = requests.post(
+            url,
+            files=files,
+            headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
+            timeout=60,
+        )
+
+    if response.status_code == 201:
+        response = _add_model_metadata(config)
+        result = f"{config.roboprop_key} uploaded successfully"
+    else:
+        result = f"Error uploading {config.roboprop_key}: {response.content}"
+
+    return result
+
+
 @dataclass
 class Config:
     roboprop_key: str
     blend_file: Path
     metadata: dict
-    # TODO add description and other fields needed for RoboProp models
 
     @classmethod
     def from_yaml(cls, path: Path):
@@ -67,21 +106,9 @@ def main():
     )
 
     if args.upload:
-        model_folder = Path(args.out) / config.roboprop_key
-        zip_file = config.roboprop_key
-        shutil.make_archive(zip_file, 'zip', model_folder)
-        with open(f"{zip_file}.zip", "rb") as zip_file:
-            files = {"files": (zip_file.name, zip_file)}
-            url = os.getenv("FILESERVER_URL", "") + f"models/{config.roboprop_key}/" + "?extract=true&clean=true"
-            response = requests.post(
-                url,
-                files=files,
-                headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "") },
-                timeout=60,
-            )
-    
-        if response.status_code == 201:
-            print(f"{config.roboprop_key} uploaded successfully")
+        result = _upload_model_to_roboprop(args, config)
+        print(result)
+
 
 if __name__ == "__main__":
     main()

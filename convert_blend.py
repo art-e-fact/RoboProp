@@ -14,28 +14,35 @@ load_dotenv()
 FILESERVER_URL = os.getenv("FILESERVER_URL", "")
 
 
+def _send_request(endpoint, method, data=None, files=None):
+    url = FILESERVER_URL + endpoint
+    headers = {"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")}
+    if method == "GET":
+        response = requests.get(url, headers=headers)
+    elif method == "PUT":
+        response = requests.put(url, data=json.dumps(data), headers=headers)
+    elif method == "POST":
+        response = requests.post(url, files=files, headers=headers, timeout=60)
+    return response  # type: ignore
+
+
 def _add_model_metadata(config):
-    url = FILESERVER_URL + f"files/index.json"
-    response = requests.get(
-        url,
-        headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
-    )
+    endpoint = "files/index.json"
+    response = _send_request(endpoint, "GET")
     if response.status_code == 200:
         index = json.loads(response.content)
         model_name = config.roboprop_key
         model_metadata = config.metadata
-        model_metadata["source"] = "upload"
-        model_metadata["scale"] = 1.0
-        model_metadata["url"] = (
-            FILESERVER_URL + f"files/models/{config.roboprop_key}/?zip=true"
+        model_metadata.update(
+            {
+                "source": "upload",
+                "scale": 1.0,
+                "url": FILESERVER_URL + f"files/models/{config.roboprop_key}/?zip=true",
+            }
         )
         index[model_name] = model_metadata
-        response = requests.put(
-            url,
-            data=json.dumps(index),
-            headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
-        )
-        if response.status_code == 200:
+        response = _send_request(endpoint, "PUT", index)
+        if response.status_code == 201:
             return f"{model_name} uploaded to Roboprop and Metadata added successfully"
         else:
             return f"Error updating metadata for {model_name}: {response.content}"
@@ -47,22 +54,15 @@ def _upload_model_to_roboprop(args, config):
     shutil.make_archive(zip_file, "zip", model_folder)
     with open(f"{zip_file}.zip", "rb") as zip_file:
         files = {"files": (zip_file.name, zip_file)}
-        url = (
-            FILESERVER_URL
-            + f"files/models/{config.roboprop_key}/?extract=true&clean=true"
-        )
-        response = requests.post(
-            url,
-            files=files,
-            headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
-            timeout=60,
-        )
-
+        endpoint = f"files/models/{config.roboprop_key}/?extract=true&clean=true"
+        response = _send_request(endpoint, "POST", files=files)
     if response.status_code == 201:
+        print(
+            f"{config.roboprop_key} uploaded to Roboprop successfully, adding Metadata"
+        )
         result = _add_model_metadata(config)
     else:
         result = f"Error uploading {config.roboprop_key}: {response.content}"
-
     return result
 
 

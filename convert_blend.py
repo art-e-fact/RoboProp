@@ -11,9 +11,11 @@ from roboprop_client.export_model import export_sdf
 
 load_dotenv()
 
+FILESERVER_URL = os.getenv("FILESERVER_URL", "")
+
 
 def _add_model_metadata(config):
-    url = os.getenv("FILESERVER_URL", "") + f"files/index.json"
+    url = FILESERVER_URL + f"files/index.json"
     response = requests.get(
         url,
         headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
@@ -25,12 +27,11 @@ def _add_model_metadata(config):
         model_metadata["source"] = "upload"
         model_metadata["scale"] = 1.0
         model_metadata["url"] = (
-            os.getenv("FILESERVER_URL", "")
-            + f"files/models/{config.roboprop_key}/?zip=true"
+            FILESERVER_URL + f"files/models/{config.roboprop_key}/?zip=true"
         )
         index[model_name] = model_metadata
         response = requests.put(
-            os.getenv("FILESERVER_URL", "") + f"files/index.json",
+            url,
             data=json.dumps(index),
             headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
         )
@@ -47,9 +48,8 @@ def _upload_model_to_roboprop(args, config):
     with open(f"{zip_file}.zip", "rb") as zip_file:
         files = {"files": (zip_file.name, zip_file)}
         url = (
-            os.getenv("FILESERVER_URL", "")
-            + f"files/models/{config.roboprop_key}/"
-            + "?extract=true&clean=true"
+            FILESERVER_URL
+            + f"files/models/{config.roboprop_key}/?extract=true&clean=true"
         )
         response = requests.post(
             url,

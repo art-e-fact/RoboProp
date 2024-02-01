@@ -19,8 +19,25 @@ def _add_model_metadata(config):
         headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
     )
     if response.status_code == 200:
-        # Convert the JSON response to a dictionary
         index = json.loads(response.content)
+        model_name = config.roboprop_key
+        model_metadata = config.metadata
+        model_metadata["source"] = "upload"
+        model_metadata["scale"] = 1.0
+        model_metadata["url"] = (
+            os.getenv("FILESERVER_URL", "")
+            + f"files/models/{config.roboprop_key}/?zip=true"
+        )
+        index[model_name] = model_metadata
+        response = requests.put(
+            os.getenv("FILESERVER_URL", "") + f"files/index.json",
+            data=json.dumps(index),
+            headers={"X-DreamFactory-Api-Key": os.getenv("FILESERVER_API_KEY", "")},
+        )
+        if response.status_code == 200:
+            return f"{model_name} uploaded to Roboprop and Metadata added successfully"
+        else:
+            return f"Error updating metadata for {model_name}: {response.content}"
 
 
 def _upload_model_to_roboprop(args, config):
@@ -31,7 +48,7 @@ def _upload_model_to_roboprop(args, config):
         files = {"files": (zip_file.name, zip_file)}
         url = (
             os.getenv("FILESERVER_URL", "")
-            + f"models/{config.roboprop_key}/"
+            + f"files/models/{config.roboprop_key}/"
             + "?extract=true&clean=true"
         )
         response = requests.post(
@@ -42,8 +59,7 @@ def _upload_model_to_roboprop(args, config):
         )
 
     if response.status_code == 201:
-        response = _add_model_metadata(config)
-        result = f"{config.roboprop_key} uploaded successfully"
+        result = _add_model_metadata(config)
     else:
         result = f"Error uploading {config.roboprop_key}: {response.content}"
 

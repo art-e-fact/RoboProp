@@ -4,7 +4,6 @@ name: Build and deploy release
 on: 
   push: 
     branches:
-      - dev
       - main
 
 jobs:

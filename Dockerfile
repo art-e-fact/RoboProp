@@ -16,7 +16,7 @@ ENV DJANGO_ALLOWED_HOSTS *
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential postgresql gcc \
     && apt-get remove -y build-essential \
-    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm
+    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm libx11-dev libxxf86vm-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev libglew-dev libxkbcommon-dev libsm6
 
 RUN pip install --upgrade pip
 COPY . $ROBOPROP_CLIENT

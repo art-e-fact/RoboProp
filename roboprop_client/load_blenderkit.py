@@ -1,19 +1,10 @@
 import uuid
 from pathlib import Path
 import requests
-import sys
-import os
 import argparse
-import sys
 import json
 import roboprop_client.utils as utils
-
-# Trick to allow importing from the same directory in Blender
-script_dir = os.path.dirname(os.path.realpath(__file__))
-if script_dir not in sys.path:
-    sys.path.append(script_dir)
-
-from export_model import export_sdf
+from roboprop_client.export_model import export_sdf
 
 CACHE_PATH = Path(".cache")
 
@@ -38,11 +29,13 @@ def load_asset_meta(asset_base_id: str):
     response = requests.get(url_path)
     data = response.json()
     if data["count"] == 0 or data["count"] > 1:
-        return
+        raise ValueError(
+            "Error: BlenderKit API returned no or multiple results for this asset_base_id"
+        )
     return data["results"][0]
 
 
-def load_model_from_blenderkit(meta):
+def load_model_from_blenderkit(meta) -> Path:
     asset_id = meta["id"]
 
     # Create output directory
@@ -62,7 +55,7 @@ def load_model_from_blenderkit(meta):
             download_url = file["downloadUrl"]
 
     if download_url is None:
-        return
+        raise ValueError("Error: No blend file found for this model meta")
 
     # Create a random scene uuid which is necessary for downloading files
     scene_uuid = str(uuid.uuid4())
@@ -102,7 +95,9 @@ def add_demo_world(model_path: Path):
     return demo_path
 
 
-def load_blenderkit_model(asset_base_id: str, output_path: str, model_name: str = None):
+def load_blenderkit_model(
+    asset_base_id: str, output_path: str, model_name: str | None = None
+):
     # Load asset meta data from BlenderKit
     meta = load_asset_meta(asset_base_id)
 

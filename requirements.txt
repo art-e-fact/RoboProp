@@ -5,4 +5,5 @@ requests
 xmltodict
 boto3
 gunicorn
-bpy
+pyYAML
+bpy==4.0.0

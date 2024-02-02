@@ -1,35 +1,35 @@
 import bpy
 from pathlib import Path
-import argparse
-import sys
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-o", "--output", dest="output", required=True)
 
 
-if "--" in sys.argv:
-    argv = sys.argv[sys.argv.index("--") + 1 :]
-else:
-    argv = []
-args = parser.parse_known_args(argv)[0]
+def _export(blend_file: Path, output: Path, format: str):
+    # Reset the state of Blender
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    # Load the blend file
+    bpy.ops.wm.open_mainfile(filepath=str(blend_file))
+    if format == "GLTF_SEPARATE":
+        # Move texture images to external files so the exporter can copy them next to the model
+        bpy.ops.file.unpack_all(method="USE_LOCAL")
+    # Export GLB
+    bpy.ops.export_scene.gltf(
+        filepath=str(output),
+        check_existing=False,
+        use_selection=False,
+        export_materials="EXPORT",
+        export_format=format,
+        export_image_format="JPEG",
+        export_jpeg_quality=60,
+        export_extras=True,
+        # the export rigged models in pos, export_def_bones=True and export_rest_position_armature=False are needed
+        export_rest_position_armature=False,
+        # export_hierarchy_flatten_bones=True,
+        export_def_bones=True,
+    )
 
-# Add Palanar Decimate modifyer to all meshes
-# angle_limit = 12.0  # merge faces within this angle
-# for obj in bpy.data.objects:
-#     if obj.type == "MESH":
-#         bpy.context.view_layer.objects.active = obj
-#         bpy.ops.object.modifier_add(type="DECIMATE")
-#         modifier = bpy.context.object.modifiers[-1]
-#         modifier.decimate_type = "DISSOLVE"
-#         modifier.angle_limit = angle_limit / 180.0 * 3.14159
-#         bpy.ops.object.modifier_apply(modifier=modifier.name)
 
-bpy.ops.export_scene.gltf(
-    filepath=args.output,
-    check_existing=False,
-    use_selection=False,
-    export_materials="EXPORT",
-    export_format="GLB",
-    export_image_format="JPEG",
-    export_jpeg_quality=60,
-)
+def export_glb(blend_file: Path, output: Path):
+    _export(blend_file, output, "GLB")
+
+
+def export_gltf(blend_file: Path, output: Path):
+    _export(blend_file, output, "GLTF_SEPARATE")

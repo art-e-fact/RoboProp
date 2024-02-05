@@ -12,11 +12,14 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_ALLOWED_HOSTS *
 
-# Install psycopg2 dependencies
+# Install psycopg2 and bpy dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential postgresql gcc \
     && apt-get remove -y build-essential \
-    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm libx11-dev libxxf86vm-dev libxcursor-dev libxi-dev libxrandr-dev libxinerama-dev libglew-dev libxkbcommon-dev libsm6
+    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm \
+    libx11-dev libxxf86vm-dev libxcursor-dev \
+    libxi-dev libxrandr-dev libxinerama-dev \
+    libglew-dev libxkbcommon-dev libsm6
 
 RUN pip install --upgrade pip
 COPY . $ROBOPROP_CLIENT

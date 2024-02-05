@@ -139,14 +139,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 STATICFILES_DIRS = [
-    'static',
+    "static",
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'compressor.finders.CompressorFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "compressor.finders.CompressorFinder",
 ]
 
 COMPRESS_ROOT = STATIC_ROOT

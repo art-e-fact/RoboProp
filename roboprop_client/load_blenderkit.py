@@ -109,8 +109,7 @@ def load_blenderkit_model(
     # objs = bproc.loader.load_blend(blend_file)
     # bpy.ops.wm.open_mainfile(filepath=blend_file)
     # bpy.ops.file.unpack_all(method="USE_LOCAL")
-    export_sdf(model_path, model_name, blend_file)
-
+    export_sdf(out_dir=model_path, model_name=model_name, blend_file_path=blend_file)
     # Save meta data in the model folder
     meta_path = model_path / "blenderkit_meta.json"
     with open(meta_path, "w") as f:

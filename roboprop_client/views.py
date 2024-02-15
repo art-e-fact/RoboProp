@@ -236,7 +236,7 @@ def _add_fuel_model_metadata(request, name, description):
         "description": description,
     }
     index = _check_and_get_index(request)
-    response = utils._update_index(request, name, metadata, "Fuel", index)
+    response = utils._update_index(name, metadata, "Fuel", index)
     return response
 
 
@@ -264,6 +264,46 @@ def _login_to_fileserver(username, password):
             return session_token, is_admin, True
     else:
         return None
+
+
+def _handle_fuel_library(request, name, index):
+    owner = request.POST.get("owner")
+    description = request.POST.get("description")
+    response = _add_fuel_model_to_my_models(name, owner)
+    if response.status_code != 201:
+        return JsonResponse(
+            {"error": f"Model: {name} failed to upload"}, status=response.status_code
+        )
+
+    metadata_response = _add_fuel_model_metadata(request, name, description)
+    if metadata_response.status_code != 201:
+        return JsonResponse(
+            {"error": f"Model: {name} uploaded, but failed to tag"},
+            status=metadata_response.status_code,
+        )
+
+    return JsonResponse(
+        {
+            "message": f"Success: Model: {name} added to My Models, and successfully tagged"
+        },
+        status=metadata_response.status_code,
+    )
+
+
+def _handle_blenderkit_library(request, name, index):
+    thumbnail = request.POST.get("thumbnail")
+    asset_base_id = request.POST.get("assetBaseId")
+    folder_name = utils.capitalize_and_remove_spaces(name)
+    try:
+        task = add_blenderkit_model_to_my_models_task.delay(
+            folder_name, asset_base_id, thumbnail, index
+        )
+        return JsonResponse(
+            {"task_id": task.id, "message": "Blender to sdf conversion in progress..."},
+            status=202,
+        )
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 """VIEWS"""
@@ -396,44 +436,25 @@ def find_models(request):
 
 @login_required
 def add_to_my_models(request):
-    if request.method == "POST":
-        name = request.POST.get("name")
-        library = request.POST.get("library")
-        index = _check_and_get_index(request)
-        if library == "fuel":
-            owner = request.POST.get("owner")
-            description = request.POST.get("description")
-            response = _add_fuel_model_to_my_models(name, owner)
-            if response.status_code == 201:
-                metadata_response = _add_fuel_model_metadata(request, name, description)
-                if metadata_response.status_code == 201:
-                    response_data = {
-                        "message": f"Success: Model: {name} added to My Models, and successfully tagged"
-                    }
-                else:
-                    response_data = {
-                        "error": f"Model: {name} uploaded, but failed to tag"
-                    }
-                return JsonResponse(response_data, status=metadata_response.status_code)
-        elif library == "blenderkit":
-            thumbnail = request.POST.get("thumbnail")
-            asset_base_id = request.POST.get("assetBaseId")
-            folder_name = utils.capitalize_and_remove_spaces(name)
-            try:
-                task = add_blenderkit_model_to_my_models_task.delay(
-                    folder_name, asset_base_id, thumbnail, index
-                )
-                response_data = {
-                    "task_id": task.id,
-                    "message": "Blender to sdf conversion in progress...",
-                }
-                return JsonResponse(response_data, status=202)
-            except ValueError as e:
-                return JsonResponse({"error": str(e)}, status=500)
-        else:
-            response_data = {"error": f"Failed to add model: {name} to My Models"}
-    else:
+    """
+    Adds a model from an external library (i.e not uploaded by the user themselves)
+    """
+    if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    name = request.POST.get("name")
+    library = request.POST.get("library")
+    index = _check_and_get_index(request)
+    if library == "fuel":
+        return _handle_fuel_library(request, name, index)
+    elif library == "blenderkit":
+        return _handle_blenderkit_library(request, name, index)
+    else:
+        return JsonResponse(
+            {
+                "error": f"Failed to add model: {name} to My Models, Unknown library: {library}"
+            }
+        )
 
 
 @login_required
@@ -491,7 +512,7 @@ def add_metadata(request, name):
             "colors": colors,
         }
         index = _check_and_get_index(request)
-        response = utils._update_index(request, name, metadata, "Upload", index)
+        response = utils._update_index(name, metadata, "Upload", index)
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:

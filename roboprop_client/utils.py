@@ -182,7 +182,7 @@ def _get_blenderkit_metadata(folder_name):
     return tags, categories, description
 
 
-def _update_index(request, model_name, model_metadata, model_source, index):
+def _update_index(model_name, model_metadata, model_source, index):
     url_safe_name = urllib.parse.quote(model_name)
     model_metadata["source"] = model_source
     model_metadata["scale"] = 1.0
@@ -192,7 +192,7 @@ def _update_index(request, model_name, model_metadata, model_source, index):
     return response
 
 
-def _add_blenderkit_model_metadata(request, folder_name, asset_base_id, index):
+def _add_blenderkit_model_metadata(folder_name, asset_base_id, index):
     tags, categories, description = _get_blenderkit_metadata(folder_name)
     metadata = {
         "tags": tags,
@@ -201,5 +201,5 @@ def _add_blenderkit_model_metadata(request, folder_name, asset_base_id, index):
         "assetBaseId": asset_base_id,
     }
     source = "Blenderkit_pro" if len(BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
-    response = _update_index(request, folder_name, metadata, source, index)
+    response = _update_index(folder_name, metadata, source, index)
     return response

@@ -421,7 +421,7 @@ def add_to_my_models(request):
             folder_name = utils.capitalize_and_remove_spaces(name)
             try:
                 task = add_blenderkit_model_to_my_models_task.delay(
-                    request, folder_name, asset_base_id, thumbnail, index
+                    folder_name, asset_base_id, thumbnail, index
                 )
                 response_data = {
                     "task_id": task.id,
@@ -535,7 +535,7 @@ def update_models_from_blenderkit(request):
                 thumbnail = data["thumbnailMiddleUrl"]
                 try:
                     task = add_blenderkit_model_to_my_models_task.delay(
-                        folder_name, asset_base_id, thumbnail
+                        folder_name, asset_base_id, thumbnail, index
                     )
                     response = JsonResponse({"task_id": task.id}, status=202)
                 except ValueError as e:

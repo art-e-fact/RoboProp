@@ -1,7 +1,7 @@
 from celery import shared_task
 from roboprop_client.utils import (
-    _add_blenderkit_model_to_my_models,
-    _add_blenderkit_model_metadata,
+    add_blenderkit_model_to_my_models,
+    add_blenderkit_model_metadata,
 )
 
 
@@ -10,11 +10,11 @@ def add_blenderkit_model_to_my_models_task(
     folder_name, asset_base_id, thumbnail, index
 ):
     try:
-        response = _add_blenderkit_model_to_my_models(
+        response = add_blenderkit_model_to_my_models(
             folder_name, asset_base_id, thumbnail
         )
         if response.status_code == 201:
-            metadata_response = _add_blenderkit_model_metadata(
+            metadata_response = add_blenderkit_model_metadata(
                 folder_name, asset_base_id, index
             )
             return metadata_response.json()

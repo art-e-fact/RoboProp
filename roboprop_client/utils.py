@@ -137,7 +137,7 @@ def delete_folders(folders):
             shutil.rmtree(folder)
 
 
-def _add_blenderkit_thumbnail(thumbnail, folder_name):
+def add_blenderkit_thumbnail(thumbnail, folder_name):
     thumbnail_response = requests.get(thumbnail)
     os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
     thumbnail_filename = os.path.basename(thumbnail)
@@ -150,10 +150,10 @@ def _add_blenderkit_thumbnail(thumbnail, folder_name):
         thumbnail_file.write(thumbnail_response.content)
 
 
-def _add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
+def add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     load_blenderkit_model(asset_base_id, "models", folder_name)
 
-    _add_blenderkit_thumbnail(thumbnail, folder_name)
+    add_blenderkit_thumbnail(thumbnail, folder_name)
     zip_filename, zip_path = create_zip_file(folder_name)
     # Upload the ZIP file in a POST request
     with open(zip_path, "rb") as zip_file:
@@ -166,7 +166,7 @@ def _add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
     return response
 
 
-def _get_blenderkit_metadata(folder_name):
+def get_blenderkit_metadata(folder_name):
     tags = []
     categories = []
     description = []
@@ -182,7 +182,7 @@ def _get_blenderkit_metadata(folder_name):
     return tags, categories, description
 
 
-def _update_index(model_name, model_metadata, model_source, index):
+def update_index(model_name, model_metadata, model_source, index):
     url_safe_name = urllib.parse.quote(model_name)
     model_metadata["source"] = model_source
     model_metadata["scale"] = 1.0
@@ -192,8 +192,8 @@ def _update_index(model_name, model_metadata, model_source, index):
     return response
 
 
-def _add_blenderkit_model_metadata(folder_name, asset_base_id, index):
-    tags, categories, description = _get_blenderkit_metadata(folder_name)
+def add_blenderkit_model_metadata(folder_name, asset_base_id, index):
+    tags, categories, description = get_blenderkit_metadata(folder_name)
     metadata = {
         "tags": tags,
         "categories": categories,
@@ -201,5 +201,5 @@ def _add_blenderkit_model_metadata(folder_name, asset_base_id, index):
         "assetBaseId": asset_base_id,
     }
     source = "Blenderkit_pro" if len(BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
-    response = _update_index(folder_name, metadata, source, index)
+    response = update_index(folder_name, metadata, source, index)
     return response

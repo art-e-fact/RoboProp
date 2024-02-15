@@ -236,7 +236,7 @@ def _add_fuel_model_metadata(request, name, description):
         "description": description,
     }
     index = _check_and_get_index(request)
-    response = utils._update_index(name, metadata, "Fuel", index)
+    response = utils.update_index(name, metadata, "Fuel", index)
     return response
 
 
@@ -512,7 +512,7 @@ def add_metadata(request, name):
             "colors": colors,
         }
         index = _check_and_get_index(request)
-        response = utils._update_index(name, metadata, "Upload", index)
+        response = utils.update_index(name, metadata, "Upload", index)
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:

@@ -4,18 +4,12 @@ import base64
 import xmltodict
 import json
 import os
-import urllib.parse
-import subprocess
-import zipfile
-import shutil
 import math
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
-from django.contrib import auth
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from roboprop_client.load_blenderkit import load_blenderkit_model
+from roboprop_client.tasks import add_blenderkit_model_to_my_models_task
 import roboprop_client.utils as utils
 
 
@@ -184,22 +178,6 @@ def _get_suggested_tags(thumbnails):
     return tags, categories, colors
 
 
-def _get_blenderkit_metadata(folder_name):
-    tags = []
-    categories = []
-    description = []
-    url = f"files/models/{folder_name}/blenderkit_meta.json"
-    response = utils.make_get_request(url)
-    if response.status_code == 200:
-        metadata = response.json()
-        tags = metadata.get("tags", [])
-        # Blenderkit has only one category per model, but this
-        # is a list for consistency
-        categories = [metadata.get("category", "").strip()]
-        description = metadata.get("description", "")
-    return tags, categories, description
-
-
 def _get_blenderkit_model_details(result):
     return {
         "name": result["name"],
@@ -227,35 +205,6 @@ def _add_fuel_model_to_my_models(name, owner):
     return response
 
 
-def _add_blenderkit_thumbnail(thumbnail, folder_name):
-    thumbnail_response = requests.get(thumbnail)
-    os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
-    thumbnail_filename = os.path.basename(thumbnail)
-    thumbnail_extension = os.path.splitext(thumbnail_filename)[1]
-    new_thumbnail_filename = "01" + thumbnail_extension
-    thumbnail_path = os.path.join(
-        "models", folder_name, "thumbnails", new_thumbnail_filename
-    )
-    with open(thumbnail_path, "wb") as thumbnail_file:
-        thumbnail_file.write(thumbnail_response.content)
-
-
-def _add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
-    load_blenderkit_model(asset_base_id, "models", folder_name)
-
-    _add_blenderkit_thumbnail(thumbnail, folder_name)
-    zip_filename, zip_path = utils.create_zip_file(folder_name)
-    # Upload the ZIP file in a POST request
-    with open(zip_path, "rb") as zip_file:
-        files = {"files": (zip_filename, zip_file)}
-        asset_name = os.path.splitext(zip_filename)[0]
-        url = f"files/models/{asset_name}/"
-        response = utils.make_post_request(url, files=files)
-
-    utils.delete_folders(["models", "textures"])
-    return response
-
-
 def _create_metadata_from_rekognition(name):
     thumbnails = _get_thumbnails([name], "models", page=1, page_size=1, gallery=False)
     tags, categories, colors = [], [], []
@@ -278,32 +227,6 @@ def _check_and_get_index(request):
     return index
 
 
-def _update_index(request, model_name, model_metadata, model_source):
-    index = _check_and_get_index(request)
-    url_safe_name = urllib.parse.quote(model_name)
-    model_metadata["source"] = model_source
-    model_metadata["scale"] = 1.0
-    model_metadata["url"] = (
-        utils.FILESERVER_URL + f"files/models/{url_safe_name}/?zip=true"
-    )
-    index[model_name] = model_metadata
-    response = utils.make_put_request("files/index.json", data=json.dumps(index))
-    return response
-
-
-def _add_blenderkit_model_metadata(request, folder_name, asset_base_id):
-    tags, categories, description = _get_blenderkit_metadata(folder_name)
-    metadata = {
-        "tags": tags,
-        "categories": categories,
-        "description": description,
-        "assetBaseId": asset_base_id,
-    }
-    source = "Blenderkit_pro" if len(utils.BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
-    response = _update_index(request, folder_name, metadata, source)
-    return response
-
-
 def _add_fuel_model_metadata(request, name, description):
     tags, categories, colors = _create_metadata_from_rekognition(name)
     metadata = {
@@ -312,8 +235,8 @@ def _add_fuel_model_metadata(request, name, description):
         "colors": colors,
         "description": description,
     }
-
-    response = _update_index(request, name, metadata, "Fuel")
+    index = _check_and_get_index(request)
+    response = utils.update_index(name, metadata, "Fuel", index)
     return response
 
 
@@ -341,6 +264,46 @@ def _login_to_fileserver(username, password):
             return session_token, is_admin, True
     else:
         return None
+
+
+def _handle_fuel_library(request, name, index):
+    owner = request.POST.get("owner")
+    description = request.POST.get("description")
+    response = _add_fuel_model_to_my_models(name, owner)
+    if response.status_code != 201:
+        return JsonResponse(
+            {"error": f"Model: {name} failed to upload"}, status=response.status_code
+        )
+
+    metadata_response = _add_fuel_model_metadata(request, name, description)
+    if metadata_response.status_code != 201:
+        return JsonResponse(
+            {"error": f"Model: {name} uploaded, but failed to tag"},
+            status=metadata_response.status_code,
+        )
+
+    return JsonResponse(
+        {
+            "message": f"Success: Model: {name} added to My Models, and successfully tagged"
+        },
+        status=metadata_response.status_code,
+    )
+
+
+def _handle_blenderkit_library(request, name, index):
+    thumbnail = request.POST.get("thumbnail")
+    asset_base_id = request.POST.get("assetBaseId")
+    folder_name = utils.capitalize_and_remove_spaces(name)
+    try:
+        task = add_blenderkit_model_to_my_models_task.delay(
+            folder_name, asset_base_id, thumbnail, index
+        )
+        return JsonResponse(
+            {"task_id": task.id, "message": "Blender to sdf conversion in progress..."},
+            status=202,
+        )
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 """VIEWS"""
@@ -473,44 +436,25 @@ def find_models(request):
 
 @login_required
 def add_to_my_models(request):
-    if request.method == "POST":
-        name = request.POST.get("name")
-        library = request.POST.get("library")
-        if library == "fuel":
-            owner = request.POST.get("owner")
-            description = request.POST.get("description")
-            response = _add_fuel_model_to_my_models(name, owner)
-        elif library == "blenderkit":
-            thumbnail = request.POST.get("thumbnail")
-            asset_base_id = request.POST.get("assetBaseId")
-            folder_name = utils.capitalize_and_remove_spaces(name)
-            try:
-                response = _add_blenderkit_model_to_my_models(
-                    folder_name, asset_base_id, thumbnail
-                )
-            except ValueError as e:
-                return JsonResponse({"error": str(e)}, status=500)
-        metadata_response = None
-        # If model upload succeeds, add metadata
-        if response.status_code == 201 and library == "blenderkit":
-            metadata_response = _add_blenderkit_model_metadata(
-                request, folder_name, asset_base_id
-            )
-        elif response.status_code == 201 and library == "fuel":
-            metadata_response = _add_fuel_model_metadata(request, name, description)
-        else:
-            response_data = {"error": f"Failed to add model: {name} to My Models"}
-        # If both the model and metadata are successfully uploaded
-        if metadata_response is not None:
-            if metadata_response.status_code == 201:
-                response_data = {
-                    "message": f"Success: Model: {name} added to My Models, and successfully tagged"
-                }
-            else:
-                response_data = {"error": f"Model: {name} uploaded, but failed to tag"}
-        return JsonResponse(response_data, status=response.status_code)
-    else:
+    """
+    Adds a model from an external library (i.e not uploaded by the user themselves)
+    """
+    if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    name = request.POST.get("name")
+    library = request.POST.get("library")
+    index = _check_and_get_index(request)
+    if library == "fuel":
+        return _handle_fuel_library(request, name, index)
+    elif library == "blenderkit":
+        return _handle_blenderkit_library(request, name, index)
+    else:
+        return JsonResponse(
+            {
+                "error": f"Failed to add model: {name} to My Models, Unknown library: {library}"
+            }
+        )
 
 
 @login_required
@@ -567,8 +511,8 @@ def add_metadata(request, name):
             "categories": categories,
             "colors": colors,
         }
-
-        response = _update_index(request, name, metadata, "Upload")
+        index = _check_and_get_index(request)
+        response = utils.update_index(name, metadata, "Upload", index)
         if response.status_code == 201:
             messages.success(request, "Model tagged successfully")
         else:
@@ -610,9 +554,13 @@ def update_models_from_blenderkit(request):
                 )
                 data = result.json()["results"][0]
                 thumbnail = data["thumbnailMiddleUrl"]
-                response = _add_blenderkit_model_to_my_models(
-                    folder_name, asset_base_id, thumbnail
-                )
+                try:
+                    task = add_blenderkit_model_to_my_models_task.delay(
+                        folder_name, asset_base_id, thumbnail, index
+                    )
+                    response = JsonResponse({"task_id": task.id}, status=202)
+                except ValueError as e:
+                    return JsonResponse({"error": str(e)}, status=500)
                 if response.status_code != 201:
                     return JsonResponse(
                         {"error": f"Update Failed"}, status=response.status_code

@@ -1,41 +1,48 @@
 import roboprop_client.utils as utils
-from unittest.mock import patch, Mock
-from django.test import TestCase, Client
+import json
+from unittest.mock import patch, Mock, ANY
+from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.messages import get_messages
+from django.contrib.messages.storage.fallback import FallbackStorage
 from roboprop_client.views import (
     _get_assets,
     _get_thumbnails,
     _search_and_cache,
+    add_to_my_models,
+    mymodel_detail,
+    mymodels,
 )
+from roboprop_client.tasks import add_blenderkit_model_to_my_models_task
 
 
 class ViewsTestCase(TestCase):
+    def setUp(self):
+        self.mock_response = Mock()
+        self.mock_response.status_code = 200
+
     def test_get_assets(self):
-        mock_response = Mock()
-        mock_response.json.return_value = {
+        self.mock_response.json.return_value = {
             "resource": [
                 {"type": "folder", "name": "model1"},
                 {"type": "file", "name": "file1"},
             ]
         }
         with patch(
-            "roboprop_client.utils.make_get_request", return_value=mock_response
+            "roboprop_client.utils.make_get_request", return_value=self.mock_response
         ):
             models = _get_assets("https://example.com/api/")
             self.assertEqual(models, ["model1"])
 
     def test_get_asset_thumbnails(self):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        self.mock_response.json.return_value = {
             "resource": [{"path": "/path/to/thumbnail.png"}]
         }
-        mock_response.content = b"example content"
+        self.mock_response.content = b"example content"
         with patch(
-            "roboprop_client.utils.make_get_request", return_value=mock_response
+            "roboprop_client.utils.make_get_request", return_value=self.mock_response
         ), patch(
             "roboprop_client.views.base64.b64encode", return_value=b"example base64"
         ):
@@ -54,19 +61,21 @@ class ViewsTestCase(TestCase):
         # Set up mock data for _get_model_configuration
         mock_configuration = {"name": "My Model", "version": "1.0"}
         mock_get_model_configuration.return_value = mock_configuration
-        # Set up mock data for the request
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.content = b"example content"
-        with patch(
-            "roboprop_client.utils.make_get_request", return_value=mock_response
-        ):
-            # Make a request to mymodel_detail
-            response = self.client.get("/mymodels/MyModel/")
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "My Model")
-        self.assertContains(response, "thumbnail.jpg")
-        self.assertContains(response, "1.0")
+
+        with patch("roboprop_client.utils.make_get_request") as mock_make_get_request:
+            self.mock_response.content = b"example content"
+            mock_make_get_request.return_value = self.mock_response
+            # Create request session to allow view to login
+            factory = RequestFactory()
+            request = factory.get("/mymodels/MyModel/")
+            request.session = {}
+            request.session["session_token"] = "dummy_token"
+            response = mymodel_detail(request, "MyModel")
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "My Model")
+            self.assertContains(response, "thumbnail.jpg")
+            self.assertContains(response, "1.0")
 
 
 class SearchAndCacheTestCase(TestCase):
@@ -126,33 +135,67 @@ class MyModelsUploadTestCase(TestCase):
 class AddToMyModelsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
+        self.mock_response = Mock()
+        self.mock_response.status_code = 200
+        # Mock login to allow view tests to run
+        self.session = self.client.session
+        self.session["session_token"] = "dummy_token"
+        self.session.save()
 
     @patch("roboprop_client.views._add_fuel_model_to_my_models")
-    def test_add_fuel_model_to_my_models(self, mock_add_fuel_model_to_my_models):
-        mock_add_fuel_model_to_my_models.return_value = Mock(status_code=201)
-        response = self.client.post(
-            "/add-to-my-models/",
-            {"name": "test_model", "library": "fuel", "owner": "test_owner"},
-        )
-        # Confirm correct arguments
-        mock_add_fuel_model_to_my_models.assert_called_once_with(
-            "test_model", "test_owner"
-        )
-
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(
-            response.json(),
-            {
-                "message": "Success: Model: test_model added to My Models, and successfully tagged"
-            },
-        )
-
-    @patch("roboprop_client.views._add_blenderkit_model_to_my_models")
-    def test_add_blenderkit_model_to_my_models(
-        self, mock_add_blenderkit_model_to_my_models
+    @patch(
+        "roboprop_client.views._create_metadata_from_rekognition",
+        return_value=(
+            ["tag1", "tag2"],
+            ["category1", "category2"],
+            ["color1", "color2"],
+        ),
+    )
+    def test_add_fuel_model_to_my_models(
+        self, mock_detect_labels, mock_add_fuel_model_to_my_models
     ):
-        mock_add_blenderkit_model_to_my_models.return_value = Mock(status_code=400)
-        response = self.client.post(
+        with patch("roboprop_client.utils.make_get_request") as mock_make_get_request:
+            self.mock_response.content = json.dumps(
+                {"index": "dummy_index"}
+            ).encode()  # Set the content to a JSON string
+            self.mock_response.json.return_value = {
+                "resource": [{"path": "dummy_path"}]
+            }  # Make the Mock object behave like a dictionary
+            mock_make_get_request.return_value = self.mock_response
+            mock_add_fuel_model_to_my_models.return_value = Mock(status_code=201)
+            factory = RequestFactory()
+            request = factory.post(
+                "/add-to-my-models/",
+                {"name": "test_model", "library": "fuel", "owner": "test_owner"},
+            )
+            request.session = self.session
+            response = add_to_my_models(request)
+
+            # Confirm correct arguments
+            mock_add_fuel_model_to_my_models.assert_called_once_with(
+                "test_model", "test_owner"
+            )
+
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(
+                json.loads(response.content),
+                {
+                    "message": "Success: Model: test_model added to My Models, and successfully tagged"
+                },
+            )
+
+    @patch("roboprop_client.utils.make_get_request")
+    @patch.object(add_blenderkit_model_to_my_models_task, "delay")
+    def test_add_blenderkit_model_to_my_models(
+        self, mock_add_blenderkit_model_to_my_models, mock_make_get_request
+    ):
+        self.mock_response.content = json.dumps(
+            {"index": "dummy_index"}
+        ).encode()  # To JSON
+        mock_make_get_request.return_value = self.mock_response
+        mock_add_blenderkit_model_to_my_models.return_value = Mock(id="dummy_task_id")
+        factory = RequestFactory()
+        request = factory.post(
             "/add-to-my-models/",
             {
                 "name": "test_model",
@@ -161,22 +204,35 @@ class AddToMyModelsTestCase(TestCase):
                 "thumbnail": "test_thumbnail",
             },
         )
+        request.session = self.session
+        response = add_to_my_models(request)
+
         # Confirm correct arguments
         mock_add_blenderkit_model_to_my_models.assert_called_once_with(
-            "Test_model", "test_asset_base_id", "test_thumbnail"
+            "Test_model", "test_asset_base_id", "test_thumbnail", ANY
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 202)
         self.assertEqual(
-            response.json(),
-            {"error": "Failed to add model: test_model to My Models"},
+            json.loads(response.content),
+            {
+                "task_id": "dummy_task_id",
+                "message": "Blender to sdf conversion in progress...",
+            },
         )
 
     def test_invalid_request_method(self):
-        response = self.client.get("/add-to-my-models/")
+        with patch("roboprop_client.utils.make_get_request") as mock_make_get_request:
+            mock_make_get_request.return_value = self.mock_response
+            factory = RequestFactory()
+            request = factory.get("/add-to-my-models/")
+            request.session = self.session
+            response = add_to_my_models(request)
 
-        self.assertEqual(response.status_code, 405)
-        self.assertEqual(response.json(), {"error": "Invalid request method"})
+            self.assertEqual(response.status_code, 405)
+            self.assertEqual(
+                json.loads(response.content), {"error": "Invalid request method"}
+            )
 
 
 """

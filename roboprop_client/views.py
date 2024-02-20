@@ -25,8 +25,10 @@ def login_required(view_func):
             if response.status_code == 200:
                 return view_func(request, *args, **kwargs)
         # Check if ajax request
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({"error": "You need to be logged in to access this page."}, status=401)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(
+                {"error": "You need to be logged in to access this page."}, status=401
+            )
         else:
             messages.error(request, "You need to be logged in to access this page.")
             return redirect("login")
@@ -582,12 +584,10 @@ def update_models_from_blenderkit(request):
             )
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
-    
+
 
 @login_required
 def task_status(request, task_id):
     task = AsyncResult(task_id)
-    response_data = {
-        "status": task.status
-    }
+    response_data = {"status": task.status}
     return JsonResponse(response_data)

@@ -10,6 +10,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
 from django.contrib import messages
 from roboprop_client.tasks import add_blenderkit_model_to_my_models_task
+from celery.result import AsyncResult
 import roboprop_client.utils as utils
 
 
@@ -23,9 +24,12 @@ def login_required(view_func):
             )
             if response.status_code == 200:
                 return view_func(request, *args, **kwargs)
-
-        messages.error(request, "You need to be logged in to access this page.")
-        return redirect("login")
+        # Check if ajax request
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"error": "You need to be logged in to access this page."}, status=401)
+        else:
+            messages.error(request, "You need to be logged in to access this page.")
+            return redirect("login")
 
     return _wrapped_view_func
 
@@ -578,3 +582,12 @@ def update_models_from_blenderkit(request):
             )
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
+    
+
+@login_required
+def task_status(request, task_id):
+    task = AsyncResult(task_id)
+    response_data = {
+        "status": task.status
+    }
+    return JsonResponse(response_data)

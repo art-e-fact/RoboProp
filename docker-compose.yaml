@@ -11,11 +11,7 @@ services:
       - web
     restart: "on-failure"
   web:
-    build: . #build the image for the web service from the dockerfile in parent directory
-    command: sh -c "python manage.py makemigrations &&
-                    python manage.py migrate &&
-                    npx tailwindcss -i ./static/src/input.css -o ./static/src/output.css &&
-                    gunicorn roboprop.wsgi:application --bind 0.0.0.0:8000"
+    build: .
     volumes:
       - .:/roboprop:rw # map files from the host to the container, useful for development
       - static_volume:/home/app/roboprop/static
@@ -26,6 +22,20 @@ services:
     expose:
       - 8000
     restart: "on-failure"
+  celery:
+    build: .
+    command: python -m celery -A roboprop worker
+    volumes:
+      - .:/roboprop:rw
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: "on-failure"
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
 
 volumes:
   static_volume:

@@ -6,7 +6,7 @@ services:
     ports:
       - 80:80
     volumes:
-      - static_volume:/home/app/roboprop/static
+      - static_volume:/home/app/roboprop/staticfiles
     depends_on:
       - web
     restart: "on-failure"
@@ -14,7 +14,7 @@ services:
     build: .
     volumes:
       - .:/roboprop:rw # map files from the host to the container, useful for development
-      - static_volume:/home/app/roboprop/static
+      - static_volume:/home/app/roboprop/staticfiles
     env_file:
       - .env
     image: roboprop

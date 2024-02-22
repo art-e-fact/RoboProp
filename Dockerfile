@@ -23,6 +23,7 @@ COPY . $ROBOPROP_CLIENT
 RUN apt-get update && apt-get install nodejs npm -y
 RUN npm install && npx tailwindcss -i $ROBOPROP_CLIENT/static/src/input.css -o $ROBOPROP_CLIENT/static/src/output.css
 RUN rm -rf node_modules
+
 # Final
 FROM --platform=linux/amd64 python:3.10-slim-bookworm
 

@@ -1,4 +1,4 @@
-# Builder stage
+# Building
 FROM --platform=linux/amd64 python:3.10-slim-bookworm as builder
 
 ENV ROBOPROP_CLIENT=/home/app/roboprop
@@ -13,20 +13,17 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_ALLOWED_HOSTS *
 
-
-# Install virtualenv
 RUN pip install --upgrade pip virtualenv
 RUN virtualenv /venv
 
-# Install python dependencies
 COPY requirements.txt .
 RUN /venv/bin/pip install -r requirements.txt
 
 COPY . $ROBOPROP_CLIENT
 RUN apt-get update && apt-get install nodejs npm -y
-RUN npm install
-RUN npx tailwindcss -i $ROBOPROP_CLIENT/static/src/input.css -o $ROBOPROP_CLIENT/static/src/output.css
-# Final stage
+RUN npm install && npx tailwindcss -i $ROBOPROP_CLIENT/static/src/input.css -o $ROBOPROP_CLIENT/static/src/output.css
+RUN rm -rf node_modules
+# Final
 FROM --platform=linux/amd64 python:3.10-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

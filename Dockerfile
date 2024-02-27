@@ -40,6 +40,9 @@ COPY --from=builder /home/app/roboprop /home/app/roboprop
 WORKDIR /home/app/roboprop
 
 ENV PATH="/venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_ALLOWED_HOSTS *
 
 RUN python manage.py makemigrations && \
     python manage.py migrate && \

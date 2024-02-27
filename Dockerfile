@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 python:3.10-slim-bookworm
+# Building
+FROM --platform=linux/amd64 python:3.10-slim-bookworm as builder
 
 ENV ROBOPROP_CLIENT=/home/app/roboprop
 RUN groupadd admin && useradd -m -g admin admin
@@ -12,23 +13,36 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_ALLOWED_HOSTS *
 
-# Install psycopg2 and bpy dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential postgresql gcc \
-    && apt-get remove -y build-essential \
-    && apt-get install -y --no-install-recommends linux-headers-generic g++ nodejs npm \
+RUN pip install --upgrade pip virtualenv
+RUN virtualenv /venv
+
+COPY requirements.txt .
+RUN /venv/bin/pip install -r requirements.txt
+
+COPY . $ROBOPROP_CLIENT
+RUN apt-get update && apt-get install nodejs npm -y
+RUN npm install && npx tailwindcss -i $ROBOPROP_CLIENT/static/src/input.css -o $ROBOPROP_CLIENT/static/src/output.css
+RUN rm -rf node_modules
+
+# Final
+FROM --platform=linux/amd64 python:3.10-slim-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    linux-headers-generic g++ \
     libx11-dev libxxf86vm-dev libxcursor-dev \
     libxi-dev libxrandr-dev libxinerama-dev \
-    libglew-dev libxkbcommon-dev libsm6
+    libglew-dev libxkbcommon-dev libsm6 && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade pip
-COPY . $ROBOPROP_CLIENT
-RUN npm install
-RUN pip install -r requirements.txt
+COPY --from=builder /venv /venv
+COPY --from=builder /home/app/roboprop /home/app/roboprop
+
+WORKDIR /home/app/roboprop
+
+ENV PATH="/venv/bin:$PATH"
 
 RUN python manage.py makemigrations && \
     python manage.py migrate && \
-    npx tailwindcss -i static/src/input.css -o static/src/output.css && \
     python manage.py collectstatic --noinput
 
 EXPOSE 8000

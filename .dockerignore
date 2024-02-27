@@ -1,7 +1,10 @@
-venv
-node_modules
-.cache
-.pytest_cache
+venv/
+node_modules/
+.cache/
+.github/
+.pytest_cache/
 .python-version
+.gitignore
 db.sqlite3
-static/CACHE
+static/CACHE/
+example.env

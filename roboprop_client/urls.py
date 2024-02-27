@@ -18,4 +18,5 @@ urlpatterns = [
         views.update_models_from_blenderkit,
         name="update_models_from_blenderkit",
     ),
+    path("task-status/<str:task_id>/", views.task_status, name="task_status"),
 ]

@@ -7,3 +7,8 @@ boto3
 gunicorn
 pyYAML
 bpy==4.0.0
+django-celery-beat 
+django-celery-results # currently requires Django 4.0 or older
+python-decouple
+redis
+celery

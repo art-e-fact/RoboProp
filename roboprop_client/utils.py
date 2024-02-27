@@ -2,6 +2,9 @@ import requests
 import os
 import shutil
 import zipfile
+import urllib.parse
+import json
+from roboprop_client.load_blenderkit import load_blenderkit_model
 
 FILESERVER_API_KEY = "X-DreamFactory-API-Key"
 FILESERVER_API_KEY_VALUE = os.getenv("FILESERVER_API_KEY", "")
@@ -132,3 +135,71 @@ def delete_folders(folders):
     for folder in folders:
         if os.path.exists(folder):
             shutil.rmtree(folder)
+
+
+def add_blenderkit_thumbnail(thumbnail, folder_name):
+    thumbnail_response = requests.get(thumbnail)
+    os.makedirs(os.path.join("models", folder_name, "thumbnails"), exist_ok=True)
+    thumbnail_filename = os.path.basename(thumbnail)
+    thumbnail_extension = os.path.splitext(thumbnail_filename)[1]
+    new_thumbnail_filename = "01" + thumbnail_extension
+    thumbnail_path = os.path.join(
+        "models", folder_name, "thumbnails", new_thumbnail_filename
+    )
+    with open(thumbnail_path, "wb") as thumbnail_file:
+        thumbnail_file.write(thumbnail_response.content)
+
+
+def add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
+    load_blenderkit_model(asset_base_id, "models", folder_name)
+
+    add_blenderkit_thumbnail(thumbnail, folder_name)
+    zip_filename, zip_path = create_zip_file(folder_name)
+    # Upload the ZIP file in a POST request
+    with open(zip_path, "rb") as zip_file:
+        files = {"files": (zip_filename, zip_file)}
+        asset_name = os.path.splitext(zip_filename)[0]
+        url = f"files/models/{asset_name}/"
+        response = make_post_request(url, files=files)
+
+    delete_folders(["models", "textures"])
+    return response
+
+
+def get_blenderkit_metadata(folder_name):
+    tags = []
+    categories = []
+    description = []
+    url = f"files/models/{folder_name}/blenderkit_meta.json"
+    response = make_get_request(url)
+    if response.status_code == 200:
+        metadata = response.json()
+        tags = metadata.get("tags", [])
+        # Blenderkit has only one category per model, but this
+        # is a list for consistency
+        categories = [metadata.get("category", "").strip()]
+        description = metadata.get("description", "")
+    return tags, categories, description
+
+
+def update_index(model_name, model_metadata, model_source, index):
+    url_safe_name = urllib.parse.quote(model_name)
+    model_metadata["source"] = model_source
+    model_metadata["scale"] = 1.0
+    model_metadata["url"] = FILESERVER_URL + f"files/models/{url_safe_name}/?zip=true"
+    index[model_name] = model_metadata
+    response = make_put_request("files/index.json", data=json.dumps(index))
+    return response
+
+
+def add_blenderkit_model_metadata(folder_name, asset_base_id, index):
+    tags, categories, description = get_blenderkit_metadata(folder_name)
+    metadata = {
+        "tags": tags,
+        "categories": categories,
+        "description": description,
+        "assetBaseId": asset_base_id,
+    }
+    source = "Blenderkit_pro" if len(BLENDERKIT_PRO_API_KEY) > 0 else "Blenderkit"
+    response = update_index(folder_name, metadata, source, index)
+    return response

@@ -8,7 +8,7 @@ from roboprop_client.blender_scripts.export_obj import export_obj
 
 EXPORT_CONFIGS = [
     {
-        "visual": "assets/visual.obj",
+        "visual": "assets/visual.fbx",
         "sdf": "model.sdf",
         "config": "model.config",
     },
@@ -72,7 +72,7 @@ def export_sdf(out_dir: Path, model_name: str, blend_file_path: Path):
         )
         pose = ElementTree.SubElement(link, "pose")
         pose.set("degrees", "1")
-        pose.text = "0 0 0 90 0 -90"
+        pose.text = "0 0 0 90 0 90"
 
         visual = ElementTree.SubElement(
             link, "visual", attrib={"name": f"{model_name}_visual"}

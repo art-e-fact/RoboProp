@@ -27,7 +27,6 @@ def export_fbx(blend_file: Path, output: Path, collision_output: Path):
             decimate_modifier = obj.modifiers.new('DecimateMod', 'DECIMATE')
             decimate_modifier.ratio = 0.1  # Adjust this value to get the desired level of simplification
 
-            # Set the object as the active object
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
 

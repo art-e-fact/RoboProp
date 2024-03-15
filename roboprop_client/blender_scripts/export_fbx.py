@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 def export_fbx(blend_file: Path, output: Path, collision_output: Path):
+    # Visual model
     # Reset the state of Blender
     bpy.ops.wm.read_factory_settings(use_empty=True)
     # Load the blend file
@@ -20,24 +21,21 @@ def export_fbx(blend_file: Path, output: Path, collision_output: Path):
         apply_scale_options="FBX_SCALE_ALL",
     )
 
-       # Create a simplified collision model
+    # Collision model
     for obj in bpy.context.scene.objects:
-        if obj.type == 'MESH':
-            # Add a Decimate modifier to reduce the number of polygons
-            decimate_modifier = obj.modifiers.new('DecimateMod', 'DECIMATE')
-            decimate_modifier.ratio = 0.1  # Adjust this value to get the desired level of simplification
-
+        if obj.type == "MESH":
+            # Decimate modifier
+            decimate_modifier = obj.modifiers.new("DecimateMod", "DECIMATE")
+            decimate_modifier.ratio = 0.5  # Lower is simpler
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
-
-            # Apply the Decimate modifier
             bpy.ops.object.modifier_apply(modifier=decimate_modifier.name)
 
-            # Create a Convex Hull from the object
-            bpy.ops.object.mode_set(mode='EDIT')  # Enter edit mode
-            bpy.ops.mesh.select_all(action='SELECT')  # Select all vertices
-            bpy.ops.mesh.convex_hull()  # Create the convex hull
-            bpy.ops.object.mode_set(mode='OBJECT')  # Return to object mode
+            # Remesh modifier
+            remesh_modifier = obj.modifiers.new("RemeshMod", "REMESH")
+            remesh_modifier.mode = "SMOOTH"  # BLOCKS, SMOOTH, or SHARP
+            remesh_modifier.octree_depth = 6  # Lower is simpler
+            bpy.ops.object.modifier_apply(modifier=remesh_modifier.name)
 
     # Export the collision model
     bpy.ops.export_scene.fbx(
@@ -47,13 +45,13 @@ def export_fbx(blend_file: Path, output: Path, collision_output: Path):
         path_mode="COPY",
         embed_textures=False,
         use_mesh_modifiers=True,
-        mesh_smooth_type='FACE',
+        mesh_smooth_type="FACE",
         use_mesh_edges=False,
         use_tspace=False,
         use_custom_props=False,
         add_leaf_bones=False,
-        primary_bone_axis='Y',
-        secondary_bone_axis='X',
+        primary_bone_axis="Y",
+        secondary_bone_axis="X",
         use_armature_deform_only=True,
         bake_anim=False,
         use_metadata=False,

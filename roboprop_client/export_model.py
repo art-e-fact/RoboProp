@@ -8,7 +8,7 @@ from roboprop_client.blender_scripts.export_obj import export_obj
 
 EXPORT_CONFIGS = [
     {
-        "visual": "assets/visual.obj",
+        "visual": "assets/visual.fbx",
         "sdf": "model.sdf",
         "config": "model.config",
     },

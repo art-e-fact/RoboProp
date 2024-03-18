@@ -72,7 +72,7 @@ def export_sdf(out_dir: Path, model_name: str, blend_file_path: Path):
         )
         pose = ElementTree.SubElement(link, "pose")
         pose.set("degrees", "1")
-        pose.text = "0 0 0 90 0 90"
+        pose.text = "0 0 0 90 0 -90"
 
         visual = ElementTree.SubElement(
             link, "visual", attrib={"name": f"{model_name}_visual"}

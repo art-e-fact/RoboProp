@@ -47,7 +47,7 @@ def make_post_request(
             url,
             files=files,
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=60,
+            timeout=540,
         )
     elif json:
         response = requests.post(

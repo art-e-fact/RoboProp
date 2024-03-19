@@ -8,12 +8,14 @@ from roboprop_client.blender_scripts.export_obj import export_obj
 
 EXPORT_CONFIGS = [
     {
-        "visual": "assets/visual.obj",
+        "visual": "assets/visual.fbx",
+        "collision": "assets/collision.fbx",
         "sdf": "model.sdf",
         "config": "model.config",
     },
     {
         "visual": "assets/visual.glb",
+        "collision": "assets/visual.glb",
         "sdf": "glft-model.sdf",
         "config": "glft-model.config",
     },
@@ -36,13 +38,14 @@ def export_sdf(out_dir: Path, model_name: str, blend_file_path: Path):
 
     for export_config in EXPORT_CONFIGS:
         visual_path = out_dir / export_config["visual"]
+        collision_path = out_dir / export_config["collision"]
         sdf_path = out_dir / export_config["sdf"]
         config_path = out_dir / export_config["config"]
 
         # Export visual model
         os.makedirs(name=os.path.dirname(visual_path), exist_ok=True)
         if Path(visual_path).suffix == ".fbx":
-            export_fbx(blend_file_path, visual_path)
+            export_fbx(blend_file_path, visual_path, collision_path)
         elif Path(visual_path).suffix == ".glb":
             export_glb(blend_file_path, visual_path)
         elif Path(visual_path).suffix == ".gltf":
@@ -88,7 +91,7 @@ def export_sdf(out_dir: Path, model_name: str, blend_file_path: Path):
         collision_mesh = ElementTree.SubElement(collision_geometry, "mesh")
         collision_mesh_uri = ElementTree.SubElement(collision_mesh, "uri")
         collision_mesh_uri.text = os.path.relpath(
-            visual_path, os.path.dirname(sdf_path)
+            collision_path, os.path.dirname(sdf_path)
         )
 
         write_xml(sdf, sdf_path)

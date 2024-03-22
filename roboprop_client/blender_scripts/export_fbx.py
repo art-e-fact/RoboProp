@@ -24,6 +24,7 @@ def export_fbx(blend_file: Path, output: Path, collision_output: Path):
     # Collision model
     for obj in bpy.context.scene.objects:
         if obj.type == "MESH":
+            obj.data = obj.data.copy() # Make the mesh single user
             # Decimate modifier
             decimate_modifier = obj.modifiers.new("DecimateMod", "DECIMATE")
             decimate_modifier.ratio = 0.5  # Lower is simpler

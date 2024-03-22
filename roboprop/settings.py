@@ -167,3 +167,4 @@ CELERY_RESULT_BACKEND = os.environ.get(
 )
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_REDIS_URL", "redis://localhost:6379")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
+CELERY_TASK_TIME_LIMIT = 10 * 60  # 10 minutes

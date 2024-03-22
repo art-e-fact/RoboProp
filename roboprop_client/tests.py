@@ -131,6 +131,7 @@ class MyModelsUploadTestCase(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Failed to upload model")
 
+
 # TODO: Fix from affecting index
 # class AddToMyModelsTestCase(TestCase):
 #     def setUp(self):

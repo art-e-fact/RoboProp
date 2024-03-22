@@ -1,5 +1,5 @@
 import bpy
-from collisions import create_collision_model
+from .collisions import create_collision_model
 from pathlib import Path
 
 
@@ -34,7 +34,7 @@ def _export(blend_file: Path, output: Path, format: str, collision_output: Path)
         check_existing=False,
         use_selection=False,
         export_materials="EXPORT",
-        export_format=format,  # Use the format parameter
+        export_format=format,
         export_image_format="JPEG",
         export_jpeg_quality=60,
         export_extras=True,
@@ -42,9 +42,9 @@ def _export(blend_file: Path, output: Path, format: str, collision_output: Path)
     )
 
 
-def export_glb(blend_file: Path, output: Path):
-    _export(blend_file, output, "GLB")
+def export_glb(blend_file: Path, output: Path, collision_output: Path):
+    _export(blend_file, output, "GLB", collision_output)
 
 
-def export_gltf(blend_file: Path, output: Path):
-    _export(blend_file, output, "GLTF_SEPARATE")
+def export_gltf(blend_file: Path, output: Path, collision_output: Path):
+    _export(blend_file, output, "GLTF_SEPARATE", collision_output)

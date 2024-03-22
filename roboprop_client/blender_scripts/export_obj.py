@@ -1,5 +1,5 @@
 import bpy
-from collisions import create_collision_model
+from .collisions import create_collision_model
 from pathlib import Path
 
 

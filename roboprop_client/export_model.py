@@ -15,7 +15,7 @@ EXPORT_CONFIGS = [
     },
     {
         "visual": "assets/visual.glb",
-        "collision": "assets/visual.glb",
+        "collision": "assets/collision.glb",
         "sdf": "glft-model.sdf",
         "config": "glft-model.config",
     },
@@ -47,11 +47,11 @@ def export_sdf(out_dir: Path, model_name: str, blend_file_path: Path):
         if Path(visual_path).suffix == ".fbx":
             export_fbx(blend_file_path, visual_path, collision_path)
         elif Path(visual_path).suffix == ".glb":
-            export_glb(blend_file_path, visual_path)
+            export_glb(blend_file_path, visual_path, collision_path)
         elif Path(visual_path).suffix == ".gltf":
-            export_gltf(blend_file_path, visual_path)
+            export_gltf(blend_file_path, visual_path, collision_path)
         elif Path(visual_path).suffix == ".obj":
-            export_obj(blend_file_path, visual_path)
+            export_obj(blend_file_path, visual_path, collision_path)
         else:
             raise ValueError(
                 f"Exporting models the with extension '{Path(visual_path).suffix}' is not implemented yet. (Appears in {visual_path})"

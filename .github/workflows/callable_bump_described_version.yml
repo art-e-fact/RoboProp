@@ -45,7 +45,7 @@ jobs:
           MAJORMINOR=$(git describe --abbrev=0 | cut -c2- | cut -d "." -f1,2)
           PATCH=$(git describe | cut -d "-" -f2)
           export VERSION=$MAJORMINOR.$PATCH
-          bump-my-version --tag --new-version $VERSION
+          bump-my-version bump --tag --new-version $VERSION
 
           git push --tags
           export VERSION=$(git describe --abbrev=0 | cut -c2- )

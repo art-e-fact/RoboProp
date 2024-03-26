@@ -44,7 +44,7 @@ jobs:
           git config user.email $GIT_EMAIL
           git config user.name "$GIT_NAME"
 
-          bump-my-version --tag --current-version $(git describe --abbrev=0) ${{ inputs.bump_part }}
+          bump-my-version bump --tag --current-version $(git describe --abbrev=0) ${{ inputs.bump_part }}
           git push --tags
           export VERSION=$(git describe --abbrev=0 | cut -c2- )
           echo "New version: $VERSION"

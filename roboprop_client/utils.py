@@ -47,7 +47,7 @@ def make_post_request(
             url,
             files=files,
             headers={FILESERVER_API_KEY: FILESERVER_API_KEY_VALUE},
-            timeout=60,
+            timeout=540,
         )
     elif json:
         response = requests.post(
@@ -131,10 +131,11 @@ def create_zip_file(folder_name):
     return zip_filename, zip_path
 
 
-def delete_folders(folders):
+def delete_folders(folders, asset_name):
     for folder in folders:
-        if os.path.exists(folder):
-            shutil.rmtree(folder)
+        path = os.path.join(folder, asset_name)
+        if os.path.exists(path):
+            shutil.rmtree(path)
 
 
 def add_blenderkit_thumbnail(thumbnail, folder_name):
@@ -155,14 +156,19 @@ def add_blenderkit_model_to_my_models(folder_name, asset_base_id, thumbnail):
 
     add_blenderkit_thumbnail(thumbnail, folder_name)
     zip_filename, zip_path = create_zip_file(folder_name)
-    # Upload the ZIP file in a POST request
-    with open(zip_path, "rb") as zip_file:
-        files = {"files": (zip_filename, zip_file)}
-        asset_name = os.path.splitext(zip_filename)[0]
-        url = f"files/models/{asset_name}/"
-        response = make_post_request(url, files=files)
+    asset_name = os.path.splitext(zip_filename)[0]
+    url = f"files/models/{asset_name}/"
 
-    delete_folders(["models", "textures"])
+    try:
+        # Upload the ZIP file in a POST request
+        with open(zip_path, "rb") as zip_file:
+            files = {"files": (zip_filename, zip_file)}
+            response = make_post_request(url, files=files)
+    finally: # Clean up, even if post request fails
+        delete_folders(["models", "textures"], asset_name)
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
     return response
 
 

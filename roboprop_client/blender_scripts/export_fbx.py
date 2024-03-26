@@ -1,4 +1,5 @@
 import bpy
+from .collisions import create_collision_model
 from pathlib import Path
 
 
@@ -21,22 +22,7 @@ def export_fbx(blend_file: Path, output: Path, collision_output: Path):
         apply_scale_options="FBX_SCALE_ALL",
     )
 
-    # Collision model
-    for obj in bpy.context.scene.objects:
-        if obj.type == "MESH":
-            # Decimate modifier
-            decimate_modifier = obj.modifiers.new("DecimateMod", "DECIMATE")
-            decimate_modifier.ratio = 0.5  # Lower is simpler
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-            bpy.ops.object.modifier_apply(modifier=decimate_modifier.name)
-
-            # Remesh modifier
-            remesh_modifier = obj.modifiers.new("RemeshMod", "REMESH")
-            remesh_modifier.mode = "SMOOTH"  # BLOCKS, SMOOTH, or SHARP
-            remesh_modifier.octree_depth = 6  # Lower is simpler
-            bpy.ops.object.modifier_apply(modifier=remesh_modifier.name)
-
+    create_collision_model()
     # Export the collision model
     bpy.ops.export_scene.fbx(
         filepath=str(collision_output),

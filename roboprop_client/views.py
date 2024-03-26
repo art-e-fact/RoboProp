@@ -549,6 +549,7 @@ def update_models_from_blenderkit(request):
     if request.method == "POST":
         # get index.json
         index = _check_and_get_index(request)
+        task_ids = []
         for model in index:
             # check if model has key assetBaseId, i.e is from blenderkit
             if "assetBaseId" in index[model]:
@@ -564,24 +565,28 @@ def update_models_from_blenderkit(request):
                     task = add_blenderkit_model_to_my_models_task.delay(
                         folder_name, asset_base_id, thumbnail, index
                     )
-                    response = JsonResponse({"task_id": task.id}, status=202)
+                    task_ids.append(task.id)
                 except ValueError as e:
                     return JsonResponse({"error": str(e)}, status=500)
-                if response.status_code != 201:
-                    return JsonResponse(
-                        {"error": f"Update Failed"}, status=response.status_code
-                    )
-        # reupload index.json
-        response = utils.make_put_request("files/index.json", data=json.dumps(index))
-        if response.status_code == 201:
-            return JsonResponse(
-                {"message": f"Success: All models from blenderkit updated"}, status=201
-            )
-        else:
-            return JsonResponse(
-                {"error": f"Models updated, but index.json failed to reupload"},
-                status=500,
-            )
+        return JsonResponse(
+            {
+                "task_ids": task_ids,
+                "message": "Blender to sdf conversion in progress...",
+            },
+            status=202,
+        )
+
+        # # reupload index.json
+        # response = utils.make_put_request("files/index.json", data=json.dumps(index))
+        # if response.status_code == 201:
+        #     return JsonResponse(
+        #         {"message": f"Success: All models from blenderkit updated"}, status=201
+        #     )
+        # else:
+        #     return JsonResponse(
+        #         {"error": f"Models updated, but index.json failed to reupload"},
+        #         status=500,
+        #     )
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
 

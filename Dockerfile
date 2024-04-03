@@ -2,7 +2,6 @@
 FROM --platform=linux/amd64 python:3.10-slim-bookworm as builder
 
 ENV ROBOPROP_CLIENT=/home/app/roboprop
-RUN groupadd admin && useradd -m -g admin admin
 
 RUN mkdir -p $ROBOPROP_CLIENT
 RUN mkdir -p $ROBOPROP_CLIENT/static
@@ -27,6 +26,8 @@ RUN rm -rf node_modules
 # Final
 FROM --platform=linux/amd64 python:3.10-slim-bookworm
 
+RUN groupadd admin && useradd -m -g admin admin
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     linux-headers-generic g++ \
     libx11-dev libxxf86vm-dev libxcursor-dev \
@@ -47,6 +48,8 @@ ENV DJANGO_ALLOWED_HOSTS *
 RUN python manage.py makemigrations && \
     python manage.py migrate && \
     python manage.py collectstatic --noinput
+
+USER admin
 
 EXPOSE 8000
 CMD [ "gunicorn", "roboprop.wsgi:application", "--bind", "0.0.0.0:8000" ]
